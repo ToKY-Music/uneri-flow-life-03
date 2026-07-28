@@ -381,6 +381,7 @@
       <button class="tab-btn" data-tab="tab-audio">🔊 音響</button>
     </div>
 
+    <!-- タブ1: 操作説明 & ショートカットガイド -->
     <div class="tab-content active" id="tab-control">
       <div class="guide-section">
         <div class="guide-title">📱 タッチ / マウス操作方法</div>
@@ -420,6 +421,7 @@
       <button class="action-btn" id="clear-particles-btn">🗑️ 全粒子をリセット (C)</button>
     </div>
 
+    <!-- タブ2: 生態系パラメーター -->
     <div class="tab-content" id="tab-eco">
       <div class="switch-group">
         <span>画面端での反転 (跳ね返り)</span>
@@ -470,6 +472,7 @@
       </div>
     </div>
 
+    <!-- タブ3: 音響設定 -->
     <div class="tab-content" id="tab-audio">
       <div class="switch-group">
         <span>マスター音声 (Sound ON/OFF)</span>
@@ -522,14 +525,12 @@
       const fastY = Math.cos(y * 0.12 - time * 0.25) * Math.sin(x * 0.1 + time * 0.2);
       const fastZ = Math.sin(z * 0.1 + time * 0.15) * Math.cos(y * 0.14 + time * 0.1);
       
-      // 合成された力の場 (ベクトルは適度な強さに抑制)
       const flowVector = new THREE.Vector3(
         slowX * 0.002 + fastX * 0.005,
         slowY * 0.002 + fastY * 0.005,
         fastZ * 0.004
       );
 
-      // 栄養の濃淡場 (0.0 ～ 1.0)
       const nutrition = (Math.sin(x * 0.05 + time * 0.1) * Math.cos(y * 0.05 - time * 0.08) + 1.0) * 0.5;
       
       return {
@@ -794,9 +795,8 @@
     // 2. Three.js セットアップ（遠近限界の撤廃）
     // ==========================================
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x080a10, 0.001); // 遠くも見渡せるようにフォグをクリアに設定
+    scene.fog = new THREE.FogExp2(0x080a10, 0.0008); 
 
-    // far プレーンを 50000 まで拡張し、どこまで行っても描写されるように修正
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 50000);
     
     let targetZoom = 30;
@@ -824,12 +824,8 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     document.body.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
-
-    const mainLight = new THREE.PointLight(0x7ef1d3, 2.5, 500);
-    mainLight.position.set(0, 0, 20);
-    scene.add(mainLight);
 
     const raycaster = new THREE.Raycaster();
     const mousePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
@@ -837,65 +833,45 @@
     const intersectPoint = new THREE.Vector3();
 
     // ==========================================
-    // 2.5 場の可視化（環境フィールド：動的流体ライン & 静的グリッド）
+    // 2.5 場のノイズフィールド可視化（有機的うねりメッシュライン）
     // ==========================================
-    const envParticlesGroup = new THREE.Group();
-    scene.add(envParticlesGroup);
-
-    const ENV_GRID_COUNT = 400;
-    const envGeo = new THREE.BufferGeometry();
-    const envPositions = new Float32Array(ENV_GRID_COUNT * 3);
-    const envScales = new Float32Array(ENV_GRID_COUNT);
-
-    // 無限に広がる環境粒子を分散初期化
-    for (let i = 0; i < ENV_GRID_COUNT; i++) {
-      envPositions[i * 3] = (Math.random() - 0.5) * 160;
-      envPositions[i * 3 + 1] = (Math.random() - 0.5) * 160;
-      envPositions[i * 3 + 2] = (Math.random() - 0.5) * 80 - 10;
-      envScales[i] = 0.5 + Math.random() * 1.5;
-    }
-
-    envGeo.setAttribute('position', new THREE.BufferAttribute(envPositions, 3));
-
-    const envMat = new THREE.PointsMaterial({
-      color: 0x306055,
-      size: 0.6,
+    const GRID_SIZE_X = 24;
+    const GRID_SIZE_Y = 24;
+    const fieldPlaneGeo = new THREE.PlaneGeometry(160, 160, GRID_SIZE_X, GRID_SIZE_Y);
+    const fieldMat = new THREE.MeshBasicMaterial({
+      color: 0x228877,
+      wireframe: true,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.18,
       blending: THREE.AdditiveBlending
     });
-
-    const envPoints = new THREE.Points(envGeo, envMat);
-    envParticlesGroup.add(envPoints);
+    const fieldMesh = new THREE.Mesh(fieldPlaneGeo, fieldMat);
+    fieldMesh.position.z = -8;
+    scene.add(fieldMesh);
 
     function updateEnvironmentField() {
-      const positions = envGeo.attributes.position.array;
+      const posAttr = fieldPlaneGeo.attributes.position;
+      const count = posAttr.count;
 
-      for (let i = 0; i < ENV_GRID_COUNT; i++) {
-        let x = positions[i * 3];
-        let y = positions[i * 3 + 1];
-        let z = positions[i * 3 + 2];
-
-        // 環境ノイズ場による揺らぎ
-        const env = getFieldFlow(x, y, z, globalTime);
-        positions[i * 3] += env.flow.x * 2.5;
-        positions[i * 3 + 1] += env.flow.y * 2.5;
-        positions[i * 3 + 2] += env.flow.z * 1.5;
-
-        // カメラ視点に連動して無限ループ表示（場の境界はない）
-        const rangeX = Math.max(80, targetZoom * 2.5);
-        const rangeY = Math.max(60, targetZoom * 2.5);
-
-        if (positions[i * 3] - targetCamPos.x > rangeX) positions[i * 3] -= rangeX * 2;
-        if (positions[i * 3] - targetCamPos.x < -rangeX) positions[i * 3] += rangeX * 2;
-        if (positions[i * 3 + 1] - targetCamPos.y > rangeY) positions[i * 3 + 1] -= rangeY * 2;
-        if (positions[i * 3 + 1] - targetCamPos.y < -rangeY) positions[i * 3 + 1] += rangeY * 2;
+      for (let i = 0; i < count; i++) {
+        let x = posAttr.getX(i);
+        let y = posAttr.getY(i);
+        
+        // ノイズフィールドの脈動と流動の波を追加
+        const env = getFieldFlow(x + targetCamPos.x, y + targetCamPos.y, 0, globalTime);
+        const waveZ = Math.sin(x * 0.08 + globalTime) * Math.cos(y * 0.08 - globalTime) * 3.5;
+        
+        posAttr.setZ(i, waveZ + env.nutrition * 2.0);
       }
-      envGeo.attributes.position.needsUpdate = true;
+      posAttr.needsUpdate = true;
+      
+      // カメラ追従（無限の視界フィールド）
+      fieldMesh.position.x = targetCamPos.x;
+      fieldMesh.position.y = targetCamPos.y;
     }
 
     // ==========================================
-    // 3. 粒子クラス（運動抑制 & 安定化ロジック）
+    // 3. 粒子クラス
     // ==========================================
     const MAX_PARTICLES = 1000;
     let particles = [];
@@ -929,14 +905,14 @@
         this.type = options.type !== undefined ? options.type : 0;
         
         const rawRadius = options.radius !== undefined ? options.radius : 0.28;
-        this.radius = Math.min(rawRadius, 3.0); 
+        this.radius = Math.min(rawRadius, 4.0); 
 
         this.hue = options.hue !== undefined ? options.hue : (0.40 + Math.random() * 0.18);
         this.attractionPower = options.attractionPower !== undefined ? Math.min(options.attractionPower, 0.05) : 0.007;
         this.lifeBonus = options.lifeBonus !== undefined ? Math.min(options.lifeBonus, 3.0) : 1.0;
         
         this.mesh.scale.setScalar(this.radius / 0.28);
-        this.mesh.material.color.setHSL(this.hue % 1.0, 0.8, 0.65);
+        this.mesh.material.color.setHSL(this.hue % 1.0, 0.85, 0.65);
 
         this.velocity = initialVel.clone().add(new THREE.Vector3(
           (Math.random() - 0.5) * 0.1,
@@ -944,7 +920,6 @@
           (Math.random() - 0.5) * 0.1
         ));
 
-        // 発生初期速度のクランプ（飛び出し防止）
         if (this.velocity.length() > 1.2) {
           this.velocity.normalize().multiplyScalar(1.2);
         }
@@ -972,7 +947,8 @@
           const other = neighbors[i];
           const dist = this.mesh.position.distanceTo(other.mesh.position);
 
-          if (dist > 0 && dist < 5.0) {
+          // ローカル範囲の集束（遠くの巨大群に全体が引っ張られないように限定）
+          if (dist > 0 && dist < 6.0) {
             cohesion.add(other.mesh.position);
             alignment.add(other.velocity);
 
@@ -997,7 +973,7 @@
           this.velocity.add(separation);
         }
 
-        // --- 場のノイズ（環境流動） ---
+        // 場のノイズ流動
         const env = getFieldFlow(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z, globalTime);
         this.velocity.add(env.flow);
 
@@ -1011,14 +987,12 @@
           }
         }
 
-        // 画面端の弾き返し（カメラ移動中や急激な変化時の物理暴走を完全防止）
         if (isBoundaryBounceEnabled && !isCameraTransforming) {
           const minX = targetCamPos.x - bounds.x;
           const maxX = targetCamPos.x + bounds.x;
           const minY = targetCamPos.y - bounds.y;
           const maxY = targetCamPos.y + bounds.y;
 
-          // 押し戻し力のソフト化（暴走防止クランプ）
           if (this.mesh.position.x > maxX) {
             const force = Math.min((this.mesh.position.x - maxX) * 0.01, 0.05);
             this.velocity.x -= force;
@@ -1044,14 +1018,12 @@
       }
 
       update(allParticles) {
-        // --- 非線形空気抵抗（Drag Force）：超高速運動を即座に減衰させるメカニズム ---
         const speed = this.velocity.length();
         if (speed > 0.2) {
-          // 速度が速いほど強烈な空気抵抗を加える（指数関数的減衰）
           const drag = 1.0 - Math.min(0.2, (speed - 0.2) * 0.3);
           this.velocity.multiplyScalar(drag);
         } else {
-          this.velocity.multiplyScalar(0.965); // 通常時の穏やかな摩擦
+          this.velocity.multiplyScalar(0.965);
         }
 
         this.mesh.position.add(this.velocity);
@@ -1083,8 +1055,11 @@
           const other = allParticles[i];
           if (other !== this) {
             const dist = this.mesh.position.distanceTo(other.mesh.position);
-            const exponentialDist = 1.0 / Math.pow(dist + 0.1, expFactor);
-            proximitySupport += exponentialDist * 0.0035;
+            // 近隣仲間サポートも局所に限定
+            if (dist < 15.0) {
+              const exponentialDist = 1.0 / Math.pow(dist + 0.1, expFactor);
+              proximitySupport += exponentialDist * 0.0035;
+            }
           }
         }
 
@@ -1109,7 +1084,7 @@
     }
 
     // ==========================================
-    // 4. 操作・中間点基準のピンチイン/アウト制御
+    // 4. 操作・ピンチイン/アウト制御
     // ==========================================
     let isInteracting = false;
     let isPanDragging = false;
@@ -1217,7 +1192,6 @@
 
       if (dragVelocity.lengthSq() > 0.04) {
         const count = Math.min(Math.floor(dragVelocity.length() * 4) + 1, 5);
-        // ドラッグによる発生速度をマイルドに抑圧（初速上限0.15）
         const clampedImpulse = dragVelocity.clone().multiplyScalar(0.15);
         if (clampedImpulse.length() > 0.2) clampedImpulse.normalize().multiplyScalar(0.2);
 
@@ -1298,12 +1272,13 @@
     });
 
     // ==========================================
-    // 5. 衝突・融合・自律増殖（分裂）ロジック
+    // 5. 衝突・無制限な複数凝集体の並立形成ロジック
     // ==========================================
     function handleCollisionsAndFusion() {
       if (reactivityFactor <= 0.01) return;
 
-      const requiredSpeed = 0.8 / reactivityFactor; 
+      // 融合条件を緩和し、画面のあらゆる場所で凝集体が発生できるように調整
+      const requiredSpeed = 0.25 / reactivityFactor; 
 
       for (let i = 0; i < particles.length; i++) {
         const p1 = particles[i];
@@ -1314,23 +1289,24 @@
           if (!p2 || p2.life <= 0 || p2.fusionCooldown > 0) continue;
 
           const dist = p1.mesh.position.distanceTo(p2.mesh.position);
-          const minDist = (p1.radius + p2.radius) * 0.8; 
+          const minDist = (p1.radius + p2.radius) * 0.95; 
 
           if (dist < minDist) {
             const relVel = new THREE.Vector3().subVectors(p1.velocity, p2.velocity);
             const relativeSpeed = relVel.length();
 
-            if (relativeSpeed > requiredSpeed) {
+            // 低速接触でも凝集・進化がスタートできるように閾値を解放
+            if (relativeSpeed > requiredSpeed || p1.type > 0 || p2.type > 0) {
               p1.life = 0;
               p2.life = 0;
 
               const newType = Math.max(p1.type, p2.type) + 1;
-              const maxLifeBonus = Math.min(Math.max(p1.lifeBonus, p2.lifeBonus) * 1.15, 2.5);
-              const maxRadius = Math.min(Math.max(p1.radius, p2.radius) * 1.1, 2.5);
-              const maxAttraction = Math.min(Math.max(p1.attractionPower, p2.attractionPower) * 1.2, 0.04);
+              const maxLifeBonus = Math.min(Math.max(p1.lifeBonus, p2.lifeBonus) * 1.2, 3.0);
+              const maxRadius = Math.min(Math.max(p1.radius, p2.radius) * 1.15, 3.5);
+              const maxAttraction = Math.min(Math.max(p1.attractionPower, p2.attractionPower) * 1.25, 0.05);
 
               const latestHue = (p1.type >= p2.type) ? p1.hue : p2.hue;
-              const newHue = latestHue + 0.05;
+              const newHue = latestHue + 0.06;
 
               const fusionPos = new THREE.Vector3().addVectors(p1.mesh.position, p2.mesh.position).multiplyScalar(0.5);
               const fusionVel = new THREE.Vector3().addVectors(p1.velocity, p2.velocity).multiplyScalar(0.5);
@@ -1343,7 +1319,7 @@
                 hue: newHue,
                 attractionPower: maxAttraction,
                 lifeBonus: maxLifeBonus,
-                fusionCooldown: 30
+                fusionCooldown: 25
               });
 
               break;
@@ -1486,16 +1462,6 @@
       }
 
       updateAudioVoices();
-
-      if (particles.length > 0) {
-        const avgPos = new THREE.Vector3();
-        for (let i = 0; i < particles.length; i++) {
-          avgPos.add(particles[i].mesh.position);
-        }
-        avgPos.divideScalar(particles.length);
-        mainLight.position.lerp(avgPos, 0.05);
-        mainLight.position.z = camera.position.z * 0.6;
-      }
 
       renderer.render(scene, camera);
     }
