@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>UNERI Flow - Emergent Particle Audio & Life Loop</title>
+  <title>UNERI Flow - Multi-scale Environment & Life Loop</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      background-color: #0d0f18;
+      background-color: #080a10;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       touch-action: none;
       -webkit-user-select: none;
@@ -508,20 +508,32 @@
 
   <script>
     // ==========================================
-    // 補助: 数学的環境ノイズ（場のうねり・栄養場）
+    // 補助: マルチスケール環境ノイズ（静的基盤 ＋ 動的流体）
     // ==========================================
     let globalTime = 0;
+
     function getFieldFlow(x, y, z, time) {
-      // 空間にゆったりとした「流速ベクトル」と「栄養度」を計算
-      const fx = Math.sin(x * 0.12 + time * 0.4) * Math.cos(z * 0.15 + time * 0.2);
-      const fy = Math.cos(y * 0.12 - time * 0.3) * Math.sin(x * 0.1 + time * 0.25);
-      const fz = Math.sin(z * 0.1 + time * 0.2) * Math.cos(y * 0.14 + time * 0.15);
+      // 1. 地質/基盤スケール (Static/Slow): 地面や大樹のようにほぼ動かない骨格場
+      const slowX = Math.sin(x * 0.02) * Math.cos(z * 0.02);
+      const slowY = Math.cos(y * 0.02) * Math.sin(x * 0.02);
+
+      // 2. 流体スケール (Dynamic/Fast): 風や水のように滑らかにゆらぐ流動場
+      const fastX = Math.sin(x * 0.12 + time * 0.3) * Math.cos(z * 0.15 + time * 0.15);
+      const fastY = Math.cos(y * 0.12 - time * 0.25) * Math.sin(x * 0.1 + time * 0.2);
+      const fastZ = Math.sin(z * 0.1 + time * 0.15) * Math.cos(y * 0.14 + time * 0.1);
       
+      // 合成された力の場 (ベクトルは適度な強さに抑制)
+      const flowVector = new THREE.Vector3(
+        slowX * 0.002 + fastX * 0.005,
+        slowY * 0.002 + fastY * 0.005,
+        fastZ * 0.004
+      );
+
       // 栄養の濃淡場 (0.0 ～ 1.0)
-      const nutrition = (Math.sin(x * 0.08 + time * 0.2) * Math.cos(y * 0.08 - time * 0.15) + 1.0) * 0.5;
+      const nutrition = (Math.sin(x * 0.05 + time * 0.1) * Math.cos(y * 0.05 - time * 0.08) + 1.0) * 0.5;
       
       return {
-        flow: new THREE.Vector3(fx, fy, fz).multiplyScalar(0.008),
+        flow: flowVector,
         nutrition: nutrition
       };
     }
@@ -779,12 +791,13 @@
     }
 
     // ==========================================
-    // 2. Three.js セットアップ
+    // 2. Three.js セットアップ（遠近限界の撤廃）
     // ==========================================
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x0d0f18, 0.012);
+    scene.fog = new THREE.FogExp2(0x080a10, 0.001); // 遠くも見渡せるようにフォグをクリアに設定
 
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+    // far プレーンを 50000 まで拡張し、どこまで行っても描写されるように修正
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 50000);
     
     let targetZoom = 30;
     let targetCamPos = new THREE.Vector3(0, 0, targetZoom);
@@ -814,7 +827,7 @@
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     scene.add(ambientLight);
 
-    const mainLight = new THREE.PointLight(0x7ef1d3, 2.5, 200);
+    const mainLight = new THREE.PointLight(0x7ef1d3, 2.5, 500);
     mainLight.position.set(0, 0, 20);
     scene.add(mainLight);
 
@@ -824,7 +837,65 @@
     const intersectPoint = new THREE.Vector3();
 
     // ==========================================
-    // 3. 粒子クラス（環境相互作用・代謝・分裂を統合）
+    // 2.5 場の可視化（環境フィールド：動的流体ライン & 静的グリッド）
+    // ==========================================
+    const envParticlesGroup = new THREE.Group();
+    scene.add(envParticlesGroup);
+
+    const ENV_GRID_COUNT = 400;
+    const envGeo = new THREE.BufferGeometry();
+    const envPositions = new Float32Array(ENV_GRID_COUNT * 3);
+    const envScales = new Float32Array(ENV_GRID_COUNT);
+
+    // 無限に広がる環境粒子を分散初期化
+    for (let i = 0; i < ENV_GRID_COUNT; i++) {
+      envPositions[i * 3] = (Math.random() - 0.5) * 160;
+      envPositions[i * 3 + 1] = (Math.random() - 0.5) * 160;
+      envPositions[i * 3 + 2] = (Math.random() - 0.5) * 80 - 10;
+      envScales[i] = 0.5 + Math.random() * 1.5;
+    }
+
+    envGeo.setAttribute('position', new THREE.BufferAttribute(envPositions, 3));
+
+    const envMat = new THREE.PointsMaterial({
+      color: 0x306055,
+      size: 0.6,
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending
+    });
+
+    const envPoints = new THREE.Points(envGeo, envMat);
+    envParticlesGroup.add(envPoints);
+
+    function updateEnvironmentField() {
+      const positions = envGeo.attributes.position.array;
+
+      for (let i = 0; i < ENV_GRID_COUNT; i++) {
+        let x = positions[i * 3];
+        let y = positions[i * 3 + 1];
+        let z = positions[i * 3 + 2];
+
+        // 環境ノイズ場による揺らぎ
+        const env = getFieldFlow(x, y, z, globalTime);
+        positions[i * 3] += env.flow.x * 2.5;
+        positions[i * 3 + 1] += env.flow.y * 2.5;
+        positions[i * 3 + 2] += env.flow.z * 1.5;
+
+        // カメラ視点に連動して無限ループ表示（場の境界はない）
+        const rangeX = Math.max(80, targetZoom * 2.5);
+        const rangeY = Math.max(60, targetZoom * 2.5);
+
+        if (positions[i * 3] - targetCamPos.x > rangeX) positions[i * 3] -= rangeX * 2;
+        if (positions[i * 3] - targetCamPos.x < -rangeX) positions[i * 3] += rangeX * 2;
+        if (positions[i * 3 + 1] - targetCamPos.y > rangeY) positions[i * 3 + 1] -= rangeY * 2;
+        if (positions[i * 3 + 1] - targetCamPos.y < -rangeY) positions[i * 3 + 1] += rangeY * 2;
+      }
+      envGeo.attributes.position.needsUpdate = true;
+    }
+
+    // ==========================================
+    // 3. 粒子クラス（運動抑制 & 安定化ロジック）
     // ==========================================
     const MAX_PARTICLES = 1000;
     let particles = [];
@@ -868,10 +939,15 @@
         this.mesh.material.color.setHSL(this.hue % 1.0, 0.8, 0.65);
 
         this.velocity = initialVel.clone().add(new THREE.Vector3(
-          (Math.random() - 0.5) * 0.12,
-          (Math.random() - 0.5) * 0.12,
-          (Math.random() - 0.5) * 0.12
+          (Math.random() - 0.5) * 0.1,
+          (Math.random() - 0.5) * 0.1,
+          (Math.random() - 0.5) * 0.1
         ));
+
+        // 発生初期速度のクランプ（飛び出し防止）
+        if (this.velocity.length() > 1.2) {
+          this.velocity.normalize().multiplyScalar(1.2);
+        }
 
         this.life = 1.0;
         this.baseDecay = (0.025 + Math.random() * 0.005) / this.lifeBonus;
@@ -882,9 +958,8 @@
 
         this.baseFreq = (80 + Math.random() * 120) * Math.pow(0.9, Math.min(this.type, 8));
 
-        // 代謝・自律増殖用の蓄積値
         this.energyAccumulated = 0.0;
-        this.shouldMitosis = false; // 分裂フラグ
+        this.shouldMitosis = false;
       }
 
       applyFlockingRule(neighbors, bounds) {
@@ -915,49 +990,70 @@
           const cohesionForce = new THREE.Vector3().subVectors(cohesion, this.mesh.position).multiplyScalar(this.attractionPower);
           this.velocity.add(cohesionForce);
 
-          alignment.divideScalar(count).multiplyScalar(0.035);
+          alignment.divideScalar(count).multiplyScalar(0.025);
           this.velocity.add(alignment);
 
-          separation.multiplyScalar(0.035);
+          separation.multiplyScalar(0.025);
           this.velocity.add(separation);
         }
 
-        // --- 1. 環境（場のノイズと栄養）との相互作用 ---
+        // --- 場のノイズ（環境流動） ---
         const env = getFieldFlow(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z, globalTime);
-        this.velocity.add(env.flow); // 場のうねりベクトルを受ける
+        this.velocity.add(env.flow);
 
-        // 栄養場にいるとエネルギーを吸収して生命力（life）がわずかに回復
         if (env.nutrition > 0.6) {
           const absorb = (env.nutrition - 0.6) * 0.008;
           this.life = Math.min(1.2, this.life + absorb);
           this.energyAccumulated += absorb;
 
-          // エネルギーが溜まり、過密でなければ「分裂」
           if (this.energyAccumulated > 0.8 && particles.length < MAX_PARTICLES * 0.85 && this.fusionCooldown <= 0) {
             this.shouldMitosis = true;
           }
         }
 
+        // 画面端の弾き返し（カメラ移動中や急激な変化時の物理暴走を完全防止）
         if (isBoundaryBounceEnabled && !isCameraTransforming) {
           const minX = targetCamPos.x - bounds.x;
           const maxX = targetCamPos.x + bounds.x;
           const minY = targetCamPos.y - bounds.y;
           const maxY = targetCamPos.y + bounds.y;
 
-          if (this.mesh.position.x > maxX) this.velocity.x -= (this.mesh.position.x - maxX) * 0.015;
-          if (this.mesh.position.x < minX) this.velocity.x += (minX - this.mesh.position.x) * 0.015;
-          if (this.mesh.position.y > maxY) this.velocity.y -= (this.mesh.position.y - maxY) * 0.015;
-          if (this.mesh.position.y < minY) this.velocity.y += (minY - this.mesh.position.y) * 0.015;
+          // 押し戻し力のソフト化（暴走防止クランプ）
+          if (this.mesh.position.x > maxX) {
+            const force = Math.min((this.mesh.position.x - maxX) * 0.01, 0.05);
+            this.velocity.x -= force;
+          }
+          if (this.mesh.position.x < minX) {
+            const force = Math.min((minX - this.mesh.position.x) * 0.01, 0.05);
+            this.velocity.x += force;
+          }
+          if (this.mesh.position.y > maxY) {
+            const force = Math.min((this.mesh.position.y - maxY) * 0.01, 0.05);
+            this.velocity.y -= force;
+          }
+          if (this.mesh.position.y < minY) {
+            const force = Math.min((minY - this.mesh.position.y) * 0.01, 0.05);
+            this.velocity.y += force;
+          }
 
           const maxZ = 12.0;
           const minZ = -15.0;
-          if (this.mesh.position.z > maxZ) this.velocity.z -= (this.mesh.position.z - maxZ) * 0.02;
-          if (this.mesh.position.z < minZ) this.velocity.z += (minZ - this.mesh.position.z) * 0.02;
+          if (this.mesh.position.z > maxZ) this.velocity.z -= 0.02;
+          if (this.mesh.position.z < minZ) this.velocity.z += 0.02;
         }
       }
 
       update(allParticles) {
-        this.velocity.multiplyScalar(0.965);
+        // --- 非線形空気抵抗（Drag Force）：超高速運動を即座に減衰させるメカニズム ---
+        const speed = this.velocity.length();
+        if (speed > 0.2) {
+          // 速度が速いほど強烈な空気抵抗を加える（指数関数的減衰）
+          const drag = 1.0 - Math.min(0.2, (speed - 0.2) * 0.3);
+          this.velocity.multiplyScalar(drag);
+        } else {
+          this.velocity.multiplyScalar(0.965); // 通常時の穏やかな摩擦
+        }
+
         this.mesh.position.add(this.velocity);
         this.age += 1;
 
@@ -1121,7 +1217,11 @@
 
       if (dragVelocity.lengthSq() > 0.04) {
         const count = Math.min(Math.floor(dragVelocity.length() * 4) + 1, 5);
-        spawnCluster(intersectPoint, count, dragVelocity.clone().multiplyScalar(0.3));
+        // ドラッグによる発生速度をマイルドに抑圧（初速上限0.15）
+        const clampedImpulse = dragVelocity.clone().multiplyScalar(0.15);
+        if (clampedImpulse.length() > 0.2) clampedImpulse.normalize().multiplyScalar(0.2);
+
+        spawnCluster(intersectPoint, count, clampedImpulse);
         lastPos.copy(intersectPoint);
       }
     }
@@ -1308,10 +1408,13 @@
     function animate() {
       requestAnimationFrame(animate);
 
-      globalTime += 0.01; // 時間軸の進行
+      globalTime += 0.01;
 
       targetCamPos.z = targetZoom;
       camera.position.lerp(targetCamPos, 0.055);
+
+      // 環境の可視化フィールドを更新
+      updateEnvironmentField();
 
       const vFOV = THREE.MathUtils.degToRad(camera.fov);
       const visibleHeight = 2 * Math.tan(vFOV / 2) * camera.position.z;
@@ -1333,16 +1436,15 @@
         const p = particles[i];
         const alive = p.update(particles);
 
-        // --- 代謝による自律分裂（細胞分裂） ---
         if (p.shouldMitosis) {
           p.shouldMitosis = false;
           p.energyAccumulated = 0;
           p.fusionCooldown = 60;
           
           const splitVel = new THREE.Vector3(
-            (Math.random() - 0.5) * 0.1,
-            (Math.random() - 0.5) * 0.1,
-            (Math.random() - 0.5) * 0.1
+            (Math.random() - 0.5) * 0.05,
+            (Math.random() - 0.5) * 0.05,
+            (Math.random() - 0.5) * 0.05
           );
 
           spawnCluster(p.mesh.position.clone(), 1, splitVel, {
