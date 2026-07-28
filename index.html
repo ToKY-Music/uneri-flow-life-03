@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>UNERI Flow - Multi-scale Environment & Life Loop</title>
+  <title>UNERI Flow - 3D Environment & Multi-Cluster Life Loop</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      background-color: #06080e;
+      background-color: #04060a;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       touch-action: none;
       -webkit-user-select: none;
@@ -20,51 +20,33 @@
       top: 20px;
       right: 20px;
       z-index: 100;
-      background: rgba(13, 15, 24, 0.85);
-      border: 1px solid rgba(126, 241, 211, 0.4);
-      color: #7ef1d3;
+      background: rgba(10, 14, 24, 0.88);
+      border: 1px solid rgba(0, 255, 210, 0.6);
+      color: #00ffd2;
       padding: 8px 16px;
       border-radius: 20px;
       cursor: pointer;
       font-size: 0.8rem;
       font-weight: bold;
       backdrop-filter: blur(10px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 0 15px rgba(0, 255, 210, 0.25);
       display: flex;
       align-items: center;
       gap: 8px;
-      transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: all 0.25s ease;
       pointer-events: auto;
     }
 
     #mode-floating-btn:hover {
-      background: rgba(20, 25, 40, 0.95);
-      border-color: #7ef1d3;
+      background: rgba(20, 30, 48, 0.95);
+      border-color: #00ffd2;
       transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(0, 255, 210, 0.4);
     }
 
     #mode-floating-btn.active {
-      background: rgba(126, 241, 211, 0.25);
-      border-color: #7ef1d3;
+      background: rgba(0, 255, 210, 0.25);
       color: #ffffff;
-      box-shadow: 0 0 15px rgba(126, 241, 211, 0.5);
-    }
-
-    @media (max-width: 768px) {
-      #mode-floating-btn {
-        top: auto;
-        bottom: 24px;
-        right: 20px;
-        padding: 10px 14px;
-        font-size: 0.75rem;
-        background: rgba(13, 15, 24, 0.92);
-        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6);
-      }
-      
-      #ui-container {
-        width: 280px !important;
-        max-width: calc(100vw - 40px);
-      }
     }
 
     #ui-container {
@@ -74,15 +56,14 @@
       z-index: 90;
       color: #e0f0ff;
       pointer-events: auto;
-      text-shadow: 0 0 8px rgba(0,255,200,0.5);
-      background: rgba(13, 15, 24, 0.88);
+      background: rgba(10, 14, 24, 0.9);
       padding: 16px;
       border-radius: 14px;
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(126, 241, 211, 0.25);
+      border: 1px solid rgba(0, 255, 210, 0.3);
       width: 290px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-      transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), padding 0.3s ease;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      transition: all 0.3s ease;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
@@ -93,10 +74,7 @@
       height: 48px;
       padding: 0;
       border-radius: 24px;
-      background: rgba(13, 15, 24, 0.9);
-      border-color: rgba(126, 241, 211, 0.6);
       cursor: pointer;
-      box-shadow: 0 0 15px rgba(126, 241, 211, 0.3);
       overflow: hidden;
     }
 
@@ -105,37 +83,31 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 6px;
-      flex-shrink: 0;
     }
 
     .ui-header-actions {
       display: flex;
       gap: 6px;
-      align-items: center;
     }
 
     h1 {
       margin: 0;
       font-size: 1.05rem;
+      color: #00ffd2;
       letter-spacing: 0.08em;
-      color: #7ef1d3;
-      white-space: nowrap;
     }
 
     .concept-sub {
       margin: 0 0 10px 0;
       font-size: 0.68rem;
-      color: #90c8b8;
+      color: #88d8c0;
       line-height: 1.35;
-      letter-spacing: 0.02em;
-      opacity: 0.85;
-      flex-shrink: 0;
     }
 
     .icon-btn {
-      background: rgba(126, 241, 211, 0.12);
-      border: 1px solid rgba(126, 241, 211, 0.3);
-      color: #7ef1d3;
+      background: rgba(0, 255, 210, 0.15);
+      border: 1px solid rgba(0, 255, 210, 0.4);
+      color: #00ffd2;
       width: 28px;
       height: 28px;
       border-radius: 50%;
@@ -144,13 +116,6 @@
       justify-content: center;
       cursor: pointer;
       font-size: 0.85rem;
-      transition: all 0.2s ease;
-      flex-shrink: 0;
-    }
-
-    .icon-btn:hover {
-      background: rgba(126, 241, 211, 0.3);
-      transform: scale(1.08);
     }
 
     .collapsed-icon {
@@ -160,9 +125,7 @@
       align-items: center;
       justify-content: center;
       font-size: 1.2rem;
-      color: #7ef1d3;
-      animation: pulse-border 2s infinite;
-      border-radius: 50%;
+      color: #00ffd2;
     }
 
     #ui-container.collapsed .tab-container,
@@ -176,15 +139,9 @@
       display: flex;
     }
 
-    @keyframes pulse-border {
-      0% { box-shadow: 0 0 0 0 rgba(126, 241, 211, 0.5); }
-      70% { box-shadow: 0 0 0 10px rgba(126, 241, 211, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(126, 241, 211, 0); }
-    }
-
     .tab-container {
       display: flex;
-      border-bottom: 1px solid rgba(126, 241, 211, 0.3);
+      border-bottom: 1px solid rgba(0, 255, 210, 0.3);
       margin-bottom: 12px;
       gap: 4px;
     }
@@ -194,97 +151,88 @@
       padding: 6px 0;
       font-size: 0.65rem;
       text-align: center;
-      background: rgba(126, 241, 211, 0.05);
-      color: #90c8b8;
+      background: rgba(0, 255, 210, 0.05);
+      color: #88d8c0;
       border: none;
       border-radius: 6px 6px 0 0;
       cursor: pointer;
-      transition: all 0.2s ease;
       font-weight: bold;
     }
 
     .tab-btn.active {
-      background: rgba(126, 241, 211, 0.22);
-      color: #7ef1d3;
-      border-bottom: 2px solid #7ef1d3;
+      background: rgba(0, 255, 210, 0.25);
+      color: #00ffd2;
+      border-bottom: 2px solid #00ffd2;
     }
 
     .tab-content {
       display: none;
       max-height: 48vh;
       overflow-y: auto;
-      padding-right: 4px;
     }
 
     .tab-content.active {
       display: block;
     }
 
-    .tab-content::-webkit-scrollbar {
-      width: 4px;
-    }
-    .tab-content::-webkit-scrollbar-thumb {
-      background: rgba(126, 241, 211, 0.3);
-      border-radius: 2px;
-    }
-
     .guide-section {
-      background: rgba(126, 241, 211, 0.05);
-      border: 1px solid rgba(126, 241, 211, 0.15);
+      background: rgba(0, 255, 210, 0.05);
+      border: 1px solid rgba(0, 255, 210, 0.2);
       border-radius: 8px;
       padding: 10px;
       margin-bottom: 10px;
     }
+
     .guide-title {
       font-size: 0.7rem;
       font-weight: bold;
-      color: #7ef1d3;
+      color: #00ffd2;
       margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
     }
+
     .guide-list {
       font-size: 0.64rem;
-      color: #b0e0d0;
+      color: #b0f0e0;
       line-height: 1.5;
       margin: 0;
       padding-left: 14px;
     }
+
     .shortcut-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 0.62rem;
-      color: #b0e0d0;
-      margin-top: 4px;
+      color: #b0f0e0;
     }
+
     .shortcut-table td {
       padding: 3px 0;
-      border-bottom: 1px dashed rgba(126, 241, 211, 0.1);
     }
+
     kbd {
-      background: rgba(126, 241, 211, 0.2);
-      border: 1px solid rgba(126, 241, 211, 0.4);
+      background: rgba(0, 255, 210, 0.2);
+      border: 1px solid rgba(0, 255, 210, 0.4);
       color: #ffffff;
       padding: 1px 5px;
       border-radius: 4px;
       font-family: monospace;
-      font-size: 0.62rem;
     }
 
     .control-group {
       margin-bottom: 10px;
     }
+
     label {
       display: flex;
       justify-content: space-between;
       font-size: 0.68rem;
-      color: #a0e0d0;
+      color: #a0f0e0;
       margin-bottom: 2px;
     }
+
     input[type="range"] {
       width: 100%;
-      accent-color: #7ef1d3;
+      accent-color: #00ffd2;
       cursor: pointer;
       height: 4px;
     }
@@ -295,28 +243,31 @@
       align-items: center;
       margin-bottom: 10px;
       font-size: 0.7rem;
-      color: #a0e0d0;
+      color: #a0f0e0;
     }
+
     .toggle-switch {
       position: relative;
       display: inline-block;
       width: 36px;
       height: 18px;
     }
+
     .toggle-switch input {
       opacity: 0;
       width: 0;
       height: 0;
     }
+
     .slider-round {
       position: absolute;
       cursor: pointer;
       top: 0; left: 0; right: 0; bottom: 0;
       background-color: rgba(255, 255, 255, 0.2);
-      transition: .3s;
       border-radius: 18px;
-      border: 1px solid rgba(126, 241, 211, 0.4);
+      border: 1px solid rgba(0, 255, 210, 0.4);
     }
+
     .slider-round:before {
       position: absolute;
       content: "";
@@ -324,13 +275,15 @@
       width: 12px;
       left: 2px;
       bottom: 2px;
-      background-color: #7ef1d3;
+      background-color: #00ffd2;
       transition: .3s;
       border-radius: 50%;
     }
+
     input:checked + .slider-round {
-      background-color: rgba(126, 241, 211, 0.4);
+      background-color: rgba(0, 255, 210, 0.4);
     }
+
     input:checked + .slider-round:before {
       transform: translateX(18px);
       background-color: #ffffff;
@@ -347,10 +300,6 @@
       cursor: pointer;
       font-size: 0.7rem;
       font-weight: bold;
-      transition: all 0.2s ease;
-    }
-    .action-btn:hover {
-      background: rgba(255, 90, 90, 0.3);
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -381,40 +330,25 @@
       <button class="tab-btn" data-tab="tab-audio">🔊 音響</button>
     </div>
 
-    <!-- タブ1: 操作説明 & ショートカットガイド -->
+    <!-- タブ1: 操作説明 -->
     <div class="tab-content active" id="tab-control">
       <div class="guide-section">
         <div class="guide-title">📱 タッチ / マウス操作方法</div>
         <ul class="guide-list">
           <li><strong>粒子発生:</strong> 1本指ドラッグ / クリックドラッグ</li>
-          <li><strong>視点移動:</strong> 2本指ドラッグ（または視点操作モード時）</li>
-          <li><strong>ズーム:</strong> ピンチイン・アウト / ホイール操作</li>
+          <li><strong>視点移動:</strong> 2本指ドラッグ（または視点操作モード）</li>
+          <li><strong>ズーム:</strong> ピンチイン・アウト / ホイール</li>
         </ul>
       </div>
 
       <div class="guide-section">
         <div class="guide-title">⌨️ PCキーボードショートカット</div>
         <table class="shortcut-table">
-          <tr>
-            <td><kbd>Space</kbd></td>
-            <td>視点操作モード ON/OFF</td>
-          </tr>
-          <tr>
-            <td><kbd>Shift</kbd> + ドラッグ</td>
-            <td>一時的に視点並行移動</td>
-          </tr>
-          <tr>
-            <td><kbd>R</kbd></td>
-            <td>視点を初期位置にリセット</td>
-          </tr>
-          <tr>
-            <td><kbd>+</kbd> / <kbd>-</kbd></td>
-            <td>ズームイン / ズームアウト</td>
-          </tr>
-          <tr>
-            <td><kbd>C</kbd></td>
-            <td>全粒子をリセット</td>
-          </tr>
+          <tr><td><kbd>Space</kbd></td><td>視点操作モード 切替</td></tr>
+          <tr><td><kbd>Shift</kbd> + ドラッグ</td><td>視点並行移動</td></tr>
+          <tr><td><kbd>R</kbd></td><td>視点リセット</td></tr>
+          <tr><td><kbd>+</kbd> / <kbd>-</kbd></td><td>ズームイン / アウト</td></tr>
+          <tr><td><kbd>C</kbd></td><td>全粒子リセット</td></tr>
         </table>
       </div>
 
@@ -432,42 +366,27 @@
       </div>
 
       <div class="control-group">
-        <label>
-          <span>孤独時の寿命の縮みやすさ</span>
-          <span id="exp-val">2.2</span>
-        </label>
+        <label><span>孤独時の寿命の縮みやすさ</span><span id="exp-val">2.2</span></label>
         <input type="range" id="exp-slider" min="1.0" max="3.5" step="0.1" value="2.2">
       </div>
 
       <div class="control-group">
-        <label>
-          <span>「ひとりぼっち」の判定基準</span>
-          <span id="thresh-val">0.0010</span>
-        </label>
+        <label><span>「ひとりぼっち」の判定基準</span><span id="thresh-val">0.0010</span></label>
         <input type="range" id="thresh-slider" min="0.0000" max="0.0050" step="0.0002" value="0.0010">
       </div>
 
       <div class="control-group">
-        <label>
-          <span>衝突で合体・進化する確率</span>
-          <span id="react-val">1.0</span>
-        </label>
+        <label><span>衝突で合体・進化する確率</span><span id="react-val">1.0</span></label>
         <input type="range" id="react-slider" min="0.0" max="3.0" step="0.1" value="1.0">
       </div>
 
       <div class="control-group">
-        <label>
-          <span>進化粒子の寿命（分解時間）</span>
-          <span id="decay-val">1.0</span>
-        </label>
+        <label><span>進化粒子の寿命（分解時間）</span><span id="decay-val">1.0</span></label>
         <input type="range" id="decay-slider" min="0.1" max="3.0" step="0.1" value="1.0">
       </div>
 
       <div class="control-group">
-        <label>
-          <span>進化粒子の最大サイズ上限</span>
-          <span id="size-val">1.20</span>
-        </label>
+        <label><span>進化粒子の最大サイズ上限</span><span id="size-val">1.20</span></label>
         <input type="range" id="size-slider" min="0.5" max="2.5" step="0.05" value="1.20">
       </div>
     </div>
@@ -483,26 +402,17 @@
       </div>
 
       <div class="control-group">
-        <label>
-          <span>粒子発生音 (Spawn Volume)</span>
-          <span id="vol-spawn-val">1.5</span>
-        </label>
+        <label><span>粒子発生音 (Spawn Volume)</span><span id="vol-spawn-val">1.5</span></label>
         <input type="range" id="vol-spawn-slider" min="0.0" max="4.0" step="0.1" value="1.5">
       </div>
 
       <div class="control-group">
-        <label>
-          <span>粒子移動音 (Motion Volume)</span>
-          <span id="vol-motion-val">2.0</span>
-        </label>
+        <label><span>粒子移動音 (Motion Volume)</span><span id="vol-motion-val">2.0</span></label>
         <input type="range" id="vol-motion-slider" min="0.0" max="5.0" step="0.1" value="2.0">
       </div>
 
       <div class="control-group">
-        <label>
-          <span>粒子融合/分解音 (Fusion Volume)</span>
-          <span id="vol-fusion-val">1.5</span>
-        </label>
+        <label><span>粒子融合/分解音 (Fusion Volume)</span><span id="vol-fusion-val">1.5</span></label>
         <input type="range" id="vol-fusion-slider" min="0.0" max="4.0" step="0.1" value="1.5">
       </div>
     </div>
@@ -511,37 +421,9 @@
 
   <script>
     // ==========================================
-    // 補助: 3次元マルチスケール動的ノイズ（山・谷・地平線・立体風）
-    // ==========================================
-    let globalTime = 0;
-
-    function get3DFieldFlow(x, y, z, time) {
-      // 3次元の立体地形とダイナミックな風のベクトル
-      const windX = Math.sin(x * 0.03 + time * 0.4) * Math.cos(z * 0.03 + time * 0.2);
-      const windY = Math.cos(y * 0.03 + time * 0.3) * Math.sin(x * 0.03 + time * 0.25);
-      const windZ = Math.sin(z * 0.04 + time * 0.5) * Math.cos(y * 0.03 + time * 0.3);
-
-      // 山脈や地平線のようなうねり高低差（Z軸方向の地形波）
-      const mountain = Math.sin(x * 0.02) * Math.cos(y * 0.02) * 12.0;
-
-      const flowVector = new THREE.Vector3(
-        windX * 0.008,
-        windY * 0.008,
-        windZ * 0.006
-      );
-
-      const nutrition = (Math.sin(x * 0.04 + time * 0.2) * Math.cos(y * 0.04 + z * 0.04) + 1.0) * 0.5;
-
-      return {
-        flow: flowVector,
-        mountainZ: mountain,
-        nutrition: nutrition
-      };
-    }
-
-    // ==========================================
     // 0. UI・制御変数
     // ==========================================
+    let globalTime = 0;
     let expFactor = 2.2;
     let thresholdValue = 0.0010;
     let reactivityFactor = 1.0; 
@@ -564,9 +446,7 @@
     function triggerCameraTransform() {
       isCameraTransforming = true;
       if (camTransformTimeout) clearTimeout(camTransformTimeout);
-      camTransformTimeout = setTimeout(() => {
-        isCameraTransforming = false;
-      }, 350); 
+      camTransformTimeout = setTimeout(() => { isCameraTransforming = false; }, 350); 
     }
 
     const uiContainer = document.getElementById('ui-container');
@@ -584,9 +464,7 @@
 
     toggleBtn.addEventListener('click', toggleUI);
     uiContainer.addEventListener('click', (e) => {
-      if (uiContainer.classList.contains('collapsed')) {
-        toggleUI(e);
-      }
+      if (uiContainer.classList.contains('collapsed')) toggleUI(e);
     });
 
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -624,7 +502,6 @@
 
     window.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT') return;
-
       if (e.code === 'Space') {
         e.preventDefault();
         setCameraMode(!isCameraMode);
@@ -642,9 +519,7 @@
     });
 
     window.addEventListener('keyup', (e) => {
-      if (e.key === 'Shift') {
-        isShiftPressed = false;
-      }
+      if (e.key === 'Shift') isShiftPressed = false;
     });
 
     const bindSlider = (sliderId, displayId, callback) => {
@@ -662,7 +537,6 @@
     });
 
     bindSlider('exp-slider', 'exp-val', v => expFactor = v);
-    
     document.getElementById('thresh-slider').addEventListener('input', (e) => {
       thresholdValue = parseFloat(e.target.value);
       document.getElementById('thresh-val').textContent = thresholdValue.toFixed(4);
@@ -670,7 +544,6 @@
 
     bindSlider('react-slider', 'react-val', v => reactivityFactor = v);
     bindSlider('decay-slider', 'decay-val', v => decayTimeFactor = v);
-    
     document.getElementById('size-slider').addEventListener('input', (e) => {
       sizeLimitThreshold = parseFloat(e.target.value);
       document.getElementById('size-val').textContent = sizeLimitThreshold.toFixed(2);
@@ -689,7 +562,7 @@
     bindSlider('vol-fusion-slider', 'vol-fusion-val', v => volFusion = v);
 
     // ==========================================
-    // 1. Web Audio API 3D空間サラウンド音響
+    // 1. Web Audio API サラウンド音響
     // ==========================================
     let audioCtx = null;
     let masterFilter = null;
@@ -705,23 +578,20 @@
           
           masterFilter = audioCtx.createBiquadFilter();
           masterFilter.type = 'lowpass';
-          masterFilter.frequency.setValueAtTime(1600, audioCtx.currentTime);
+          masterFilter.frequency.setValueAtTime(1800, audioCtx.currentTime);
           masterFilter.connect(audioCtx.destination);
 
           for (let i = 0; i < MAX_VOICES; i++) {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
 
-            let panner;
+            let panner = null;
             if (audioCtx.createPanner) {
               panner = audioCtx.createPanner();
               panner.panningModel = 'HRTF';
               panner.distanceModel = 'inverse';
               panner.refDistance = 5;
-              panner.maxDistance = 100;
               panner.rolloffFactor = 1.5;
-            } else {
-              panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
             }
 
             osc.type = 'triangle';
@@ -749,7 +619,6 @@
 
     function playPokoSound(pitchRatio = 1.0, isFusion = false, pos = null) {
       if (!isAudioEnabled || !audioCtx || audioCtx.state !== 'running') return;
-
       const baseVolume = isFusion ? volFusion : volSpawn;
       if (baseVolume <= 0.001) return;
 
@@ -760,10 +629,6 @@
         let panner = null;
         if (pos && audioCtx.createPanner) {
           panner = audioCtx.createPanner();
-          panner.panningModel = 'HRTF';
-          panner.distanceModel = 'inverse';
-          panner.refDistance = 5;
-          panner.rolloffFactor = 1.5;
           panner.positionX.setValueAtTime(pos.x, audioCtx.currentTime);
           panner.positionY.setValueAtTime(pos.y, audioCtx.currentTime);
           panner.positionZ.setValueAtTime(pos.z, audioCtx.currentTime);
@@ -792,10 +657,10 @@
     }
 
     // ==========================================
-    // 2. Three.js セットアップ & 復元された美麗ライティング (③の修正)
+    // 2. Three.js セットアップ & 復元ライティング (③の修正)
     // ==========================================
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x06080e, 0.0006); 
+    scene.fog = new THREE.FogExp2(0x04060a, 0.0005); 
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 50000);
     
@@ -824,16 +689,16 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     document.body.appendChild(renderer.domElement);
 
-    // 【③ 修正】以前の立体感を出す美しいライティング環境を再現
-    const ambientLight = new THREE.AmbientLight(0x223344, 0.7);
+    // 【③ 修正】元の深い陰影とクリアな輝きを生むライティング構成
+    const ambientLight = new THREE.AmbientLight(0x223344, 0.8);
     scene.add(ambientLight);
 
-    const mainLight = new THREE.DirectionalLight(0x7ef1d3, 1.2);
-    mainLight.position.set(20, 30, 25);
+    const mainLight = new THREE.DirectionalLight(0x00ffd2, 1.3);
+    mainLight.position.set(20, 35, 25);
     scene.add(mainLight);
 
-    const subLight = new THREE.DirectionalLight(0xff6090, 0.6);
-    subLight.position.set(-20, -20, -10);
+    const subLight = new THREE.DirectionalLight(0xff4080, 0.7);
+    subLight.position.set(-25, -20, -10);
     scene.add(subLight);
 
     const raycaster = new THREE.Raycaster();
@@ -842,99 +707,104 @@
     const intersectPoint = new THREE.Vector3();
 
     // ==========================================
-    // 2.5 3D高視認性ノイズフィールド (①＆②の修正)
+    // 2.5 高視認性3Dノイズフィールド＆立体流速 (①＆②の修正)
     // ==========================================
-    // 手前・奥・山谷を表現する高密度3Dメッシュフィールド
-    const GRID_X = 40;
-    const GRID_Y = 40;
-    const fieldPlaneGeo = new THREE.PlaneGeometry(280, 280, GRID_X, GRID_Y);
+    // 1. 高コントラスト＆高視認性3D地形メッシュ（山・谷・地平線）
+    const GRID_X = 50;
+    const GRID_Y = 50;
+    const fieldPlaneGeo = new THREE.PlaneGeometry(320, 320, GRID_X, GRID_Y);
     
+    // 発光感を高めたアクアブルーのマテリアル
     const fieldMat = new THREE.MeshBasicMaterial({
-      color: 0x33e0bb,
+      color: 0x00ffd2,
       wireframe: true,
       transparent: true,
-      opacity: 0.42,
+      opacity: 0.65, // ① 劇的に見えやすく高コントラスト化
       blending: THREE.AdditiveBlending
     });
     
     const fieldMesh = new THREE.Mesh(fieldPlaneGeo, fieldMat);
-    fieldMesh.rotation.x = -Math.PI * 0.28; // 地平線と奥行きを持たせる傾き
-    fieldMesh.position.z = -15;
+    fieldMesh.rotation.x = -Math.PI * 0.32; // ② 奥に地平線ができる傾き
+    fieldMesh.position.z = -18;
     scene.add(fieldMesh);
 
-    // 空間を流れる「風」の3D幾何学ライン群
-    const WIND_LINE_COUNT = 30;
-    const windLinesGroup = new THREE.Group();
-    const windGeometries = [];
+    // 2. 立体的な「風」の流れを表現する3D流線群 (② 3次元の風表現)
+    const WIND_COUNT = 40;
+    const windGroup = new THREE.Group();
+    const windData = [];
 
-    for (let l = 0; l < WIND_LINE_COUNT; l++) {
-      const lineGeo = new THREE.BufferGeometry();
-      const points = [];
-      const numPoints = 16;
-      for (let p = 0; p < numPoints; p++) {
-        points.push(new THREE.Vector3(0, 0, 0));
-      }
-      lineGeo.setFromPoints(points);
-      
-      const lineMat = new THREE.LineBasicMaterial({
-        color: 0x50f5d0,
+    for (let w = 0; w < WIND_COUNT; w++) {
+      const pGeo = new THREE.BufferGeometry();
+      const pCount = 12;
+      const positions = new Float32Array(pCount * 3);
+      pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+      const pMat = new THREE.LineBasicMaterial({
+        color: 0x7ef1d3,
         transparent: true,
-        opacity: 0.35 + Math.random() * 0.35,
+        opacity: 0.7,
         blending: THREE.AdditiveBlending
       });
 
-      const lineMesh = new THREE.Line(lineGeo, lineMat);
-      windLinesGroup.add(lineMesh);
-      
-      windGeometries.push({
-        mesh: lineMesh,
-        geo: lineGeo,
-        seedX: (Math.random() - 0.5) * 160,
-        seedY: (Math.random() - 0.5) * 120,
-        seedZ: (Math.random() - 0.5) * 60 - 10,
-        speed: 0.4 + Math.random() * 0.6
+      const line = new THREE.Line(pGeo, pMat);
+      windGroup.add(line);
+
+      windData.push({
+        line: line,
+        geo: pGeo,
+        x: (Math.random() - 0.5) * 200,
+        y: (Math.random() - 0.5) * 150,
+        z: (Math.random() - 0.5) * 80 - 10,
+        speed: 0.6 + Math.random() * 0.8
       });
     }
-    scene.add(windLinesGroup);
+    scene.add(windGroup);
 
-    function updateEnvironmentField() {
-      // 1. 3D地形メッシュの更新（山・谷・地平線）
+    function get3DNoiseVector(x, y, z, time) {
+      // 3次元でうねる風と地形の高低差ベクトル
+      const waveX = Math.sin(x * 0.02 + time * 0.5) * Math.cos(z * 0.02);
+      const waveY = Math.cos(y * 0.02 + time * 0.4) * Math.sin(x * 0.02);
+      const waveZ = Math.sin(z * 0.03 + time * 0.6) * Math.cos(y * 0.02);
+
+      const mountain = Math.sin(x * 0.015) * Math.cos(y * 0.015) * 18.0; // 山脈・谷の高低差
+
+      return {
+        flow: new THREE.Vector3(waveX * 0.01, waveY * 0.01, waveZ * 0.008),
+        mountainZ: mountain
+      };
+    }
+
+    function update3DEnvironment() {
+      // 地形メッシュの波打ちと高低差更新
       const posAttr = fieldPlaneGeo.attributes.position;
-      const count = posAttr.count;
-
-      for (let i = 0; i < count; i++) {
-        let x = posAttr.getX(i);
-        let y = posAttr.getY(i);
-        
-        const env = get3DFieldFlow(x + targetCamPos.x, y + targetCamPos.y, 0, globalTime);
-        const dynamicWave = Math.sin(x * 0.05 + globalTime * 1.5) * Math.cos(y * 0.05 + globalTime * 1.2) * 6.0;
-        
-        posAttr.setZ(i, env.mountainZ + dynamicWave);
+      for (let i = 0; i < posAttr.count; i++) {
+        const x = posAttr.getX(i);
+        const y = posAttr.getY(i);
+        const noise = get3DNoiseVector(x + targetCamPos.x, y + targetCamPos.y, 0, globalTime);
+        const dynamicZ = noise.mountainZ + Math.sin(x * 0.04 + globalTime * 2.0) * Math.cos(y * 0.04) * 8.0;
+        posAttr.setZ(i, dynamicZ);
       }
       posAttr.needsUpdate = true;
-
       fieldMesh.position.x = targetCamPos.x;
-      fieldMesh.position.y = targetCamPos.y + 10;
+      fieldMesh.position.y = targetCamPos.y + 15;
 
-      // 2. 3D流動「風」ラインのリアルタイムうねり更新
-      windGeometries.forEach(w => {
-        const posArr = w.geo.attributes.position.array;
-        let currX = w.seedX + Math.sin(globalTime * w.speed) * 20;
-        let currY = w.seedY + Math.cos(globalTime * w.speed * 0.8) * 15;
-        let currZ = w.seedZ;
+      // 3D風の流線アニメーション（手前・奥へ通り抜けるうねり）
+      windData.forEach(w => {
+        const pos = w.geo.attributes.position.array;
+        let currX = w.x + Math.sin(globalTime * w.speed) * 30;
+        let currY = w.y + Math.cos(globalTime * w.speed * 0.7) * 20;
+        let currZ = w.z;
 
-        for (let p = 0; p < 16; p++) {
-          posArr[p * 3] = currX + p * 2.5;
-          posArr[p * 3 + 1] = currY + Math.sin(currX * 0.05 + globalTime * 2.0 + p * 0.2) * 5.0;
-          posArr[p * 3 + 2] = currZ + Math.cos(currY * 0.05 + globalTime * 1.5 + p * 0.2) * 5.0;
-
-          currX += 1.5;
+        for (let p = 0; p < 12; p++) {
+          pos[p * 3] = currX + p * 2.0;
+          pos[p * 3 + 1] = currY + Math.sin(currX * 0.04 + globalTime * 2.5 + p * 0.3) * 6.0;
+          pos[p * 3 + 2] = currZ + Math.cos(currY * 0.04 + globalTime * 2.0 + p * 0.3) * 6.0;
+          currX += 1.8;
         }
         w.geo.attributes.position.needsUpdate = true;
       });
-
-      windLinesGroup.position.x = targetCamPos.x;
-      windLinesGroup.position.y = targetCamPos.y;
+      windGroup.position.x = targetCamPos.x;
+      windGroup.position.y = targetCamPos.y;
     }
 
     // ==========================================
@@ -944,9 +814,7 @@
     let particles = [];
 
     function clearAllParticles() {
-      for (let i = 0; i < particles.length; i++) {
-        particles[i].destroy();
-      }
+      for (let i = 0; i < particles.length; i++) particles[i].destroy();
       particles = [];
     }
 
@@ -959,24 +827,21 @@
 
     class ChibiParticle {
       constructor(x, y, z, initialVel, options = {}) {
-        // 【③ 修正】光の当たる質感を持つ Phong マテリアルを個別保持
+        // 【③ 修正】光と反射を受ける Phong マテリアル
         this.material = new THREE.MeshPhongMaterial({
-          color: 0x7ef1d3,
-          emissive: 0x052218,
+          color: 0x00ffd2,
+          emissive: 0x022018,
           specular: 0xffffff,
-          shininess: 80,
+          shininess: 90,
           transparent: true,
-          opacity: 0.88
+          opacity: 0.92
         });
 
         this.mesh = new THREE.Mesh(baseSphereGeo, this.material);
         this.mesh.position.set(x, y, z);
         
         this.type = options.type !== undefined ? options.type : 0;
-        
-        const rawRadius = options.radius !== undefined ? options.radius : 0.28;
-        this.radius = Math.min(rawRadius, 4.5); 
-
+        this.radius = Math.min(options.radius !== undefined ? options.radius : 0.28, 4.5);
         this.hue = options.hue !== undefined ? options.hue : (0.40 + Math.random() * 0.18);
         this.attractionPower = options.attractionPower !== undefined ? Math.min(options.attractionPower, 0.06) : 0.008;
         this.lifeBonus = options.lifeBonus !== undefined ? Math.min(options.lifeBonus, 3.5) : 1.0;
@@ -990,21 +855,13 @@
           (Math.random() - 0.5) * 0.1
         ));
 
-        if (this.velocity.length() > 1.2) {
-          this.velocity.normalize().multiplyScalar(1.2);
-        }
-
         this.life = 1.0;
         this.baseDecay = (0.025 + Math.random() * 0.005) / this.lifeBonus;
-
         this.age = 0;
         this.decomposed = false;
-        this.fusionCooldown = options.fusionCooldown !== undefined ? options.fusionCooldown : 20;
+        this.fusionCooldown = options.fusionCooldown !== undefined ? options.fusionCooldown : 15;
 
         this.baseFreq = (80 + Math.random() * 120) * Math.pow(0.9, Math.min(this.type, 8));
-
-        this.energyAccumulated = 0.0;
-        this.shouldMitosis = false;
       }
 
       applyFlockingRule(neighbors, bounds) {
@@ -1013,19 +870,19 @@
         const alignment = new THREE.Vector3();
         let count = 0;
 
+        // 【④ 修正】ローカルのみの集束計算で複数箇所に個別の凝集体を作る
         for (let i = 0; i < neighbors.length; i++) {
           const other = neighbors[i];
           const dist = this.mesh.position.distanceTo(other.mesh.position);
 
-          // 【④ 修正】ローカルのみの集束で画面の複数箇所に巨大群れが生成できるように計算範囲を限定
-          if (dist > 0 && dist < 5.0) {
+          if (dist > 0 && dist < 6.0) {
             cohesion.add(other.mesh.position);
             alignment.add(other.velocity);
 
             if (dist < (1.1 * (this.radius + other.radius) / 0.56)) {
-              const pushAway = new THREE.Vector3().subVectors(this.mesh.position, other.mesh.position);
-              pushAway.normalize().divideScalar(Math.max(dist, 0.1));
-              separation.add(pushAway);
+              const push = new THREE.Vector3().subVectors(this.mesh.position, other.mesh.position);
+              push.normalize().divideScalar(Math.max(dist, 0.1));
+              separation.add(push);
             }
             count++;
           }
@@ -1035,27 +892,15 @@
           cohesion.divideScalar(count);
           const cohesionForce = new THREE.Vector3().subVectors(cohesion, this.mesh.position).multiplyScalar(this.attractionPower);
           this.velocity.add(cohesionForce);
-
           alignment.divideScalar(count).multiplyScalar(0.025);
           this.velocity.add(alignment);
-
           separation.multiplyScalar(0.025);
           this.velocity.add(separation);
         }
 
-        // 3D場の風・ノイズ流動力を適用
-        const env = get3DFieldFlow(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z, globalTime);
+        // 3D環境風を粒子に与える
+        const env = get3DNoiseVector(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z, globalTime);
         this.velocity.add(env.flow);
-
-        if (env.nutrition > 0.6) {
-          const absorb = (env.nutrition - 0.6) * 0.008;
-          this.life = Math.min(1.2, this.life + absorb);
-          this.energyAccumulated += absorb;
-
-          if (this.energyAccumulated > 0.8 && particles.length < MAX_PARTICLES * 0.85 && this.fusionCooldown <= 0) {
-            this.shouldMitosis = true;
-          }
-        }
 
         if (isBoundaryBounceEnabled && !isCameraTransforming) {
           const minX = targetCamPos.x - bounds.x;
@@ -1063,25 +908,15 @@
           const minY = targetCamPos.y - bounds.y;
           const maxY = targetCamPos.y + bounds.y;
 
-          if (this.mesh.position.x > maxX) this.velocity.x -= Math.min((this.mesh.position.x - maxX) * 0.01, 0.05);
-          if (this.mesh.position.x < minX) this.velocity.x += Math.min((minX - this.mesh.position.x) * 0.01, 0.05);
-          if (this.mesh.position.y > maxY) this.velocity.y -= Math.min((this.mesh.position.y - maxY) * 0.01, 0.05);
-          if (this.mesh.position.y < minY) this.velocity.y += Math.min((minY - this.mesh.position.y) * 0.01, 0.05);
-
-          if (this.mesh.position.z > 15.0) this.velocity.z -= 0.02;
-          if (this.mesh.position.z < -18.0) this.velocity.z += 0.02;
+          if (this.mesh.position.x > maxX) this.velocity.x -= 0.03;
+          if (this.mesh.position.x < minX) this.velocity.x += 0.03;
+          if (this.mesh.position.y > maxY) this.velocity.y -= 0.03;
+          if (this.mesh.position.y < minY) this.velocity.y += 0.03;
         }
       }
 
       update(allParticles) {
-        const speed = this.velocity.length();
-        if (speed > 0.2) {
-          const drag = 1.0 - Math.min(0.2, (speed - 0.2) * 0.3);
-          this.velocity.multiplyScalar(drag);
-        } else {
-          this.velocity.multiplyScalar(0.965);
-        }
-
+        this.velocity.multiplyScalar(0.97);
         this.mesh.position.add(this.velocity);
         this.age += 1;
 
@@ -1089,44 +924,31 @@
 
         if (this.type > 0) {
           let baseDecomposeAge = (220 + this.type * 90) * decayTimeFactor;
-          
           if (this.radius > sizeLimitThreshold) {
-            const overScale = this.radius / sizeLimitThreshold;
-            baseDecomposeAge /= Math.max(1.1, Math.pow(overScale, 2));
+            baseDecomposeAge /= Math.max(1.1, Math.pow(this.radius / sizeLimitThreshold, 2));
           }
-
           if (this.age > baseDecomposeAge) {
             this.decomposed = true;
             return false;
           }
-
-          this.material.opacity = 0.9;
+          this.material.opacity = 0.92;
           return true; 
         }
 
         let proximitySupport = 0;
-        const totalCount = allParticles.length;
-
-        for (let i = 0; i < totalCount; i++) {
+        for (let i = 0; i < allParticles.length; i++) {
           const other = allParticles[i];
           if (other !== this) {
             const dist = this.mesh.position.distanceTo(other.mesh.position);
             if (dist < 12.0) {
-              const exponentialDist = 1.0 / Math.pow(dist + 0.1, expFactor);
-              proximitySupport += exponentialDist * 0.0035;
+              proximitySupport += (1.0 / Math.pow(dist + 0.1, expFactor)) * 0.0035;
             }
           }
         }
 
-        let totalSupport = 0;
-        if (proximitySupport > thresholdValue) {
-          const countSupport = Math.pow(totalCount, 1.1) * 0.00003;
-          totalSupport = proximitySupport + countSupport;
-        }
-
-        const currentDecay = Math.max(0.0003, this.baseDecay - totalSupport);
-        this.life -= currentDecay;
-        this.material.opacity = Math.max(0, this.life * 0.88);
+        let totalSupport = (proximitySupport > thresholdValue) ? (proximitySupport + allParticles.length * 0.00003) : 0;
+        this.life -= Math.max(0.0003, this.baseDecay - totalSupport);
+        this.material.opacity = Math.max(0, this.life * 0.92);
 
         return this.life > 0;
       }
@@ -1139,15 +961,13 @@
     }
 
     // ==========================================
-    // 4. 操作・ピンチイン/アウト制御
+    // 4. 操作制御（ピンチ・ドラッグ）
     // ==========================================
     let isInteracting = false;
     let isPanDragging = false;
     let lastPos = new THREE.Vector3();
     let dragVelocity = new THREE.Vector3();
-
     let initialPinchDistance = null;
-    let lastTouchCenter = new THREE.Vector2();
 
     function getPointerPos(e) {
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -1160,31 +980,9 @@
       raycaster.ray.intersectPlane(mousePlane, intersectPoint);
     }
 
-    function getTouchDistance(e) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    function getTouchCenter(e) {
-      return new THREE.Vector2(
-        (e.touches[0].clientX + e.touches[1].clientX) / 2,
-        (e.touches[0].clientY + e.touches[1].clientY) / 2
-      );
-    }
-
     function onPointerDown(e) {
       if (e.target.closest('#ui-container') || e.target.closest('#mode-floating-btn')) return;
       initAudio();
-
-      if (e.touches && e.touches.length === 2) {
-        isInteracting = false;
-        isPanDragging = true;
-        initialPinchDistance = getTouchDistance(e);
-        lastTouchCenter = getTouchCenter(e);
-        triggerCameraTransform();
-        return;
-      }
 
       if (isCameraMode || isShiftPressed) {
         isPanDragging = true;
@@ -1205,38 +1003,11 @@
     }
 
     function onPointerMove(e) {
-      if (e.touches && e.touches.length === 2) {
-        triggerCameraTransform();
-
-        const currentDistance = getTouchDistance(e);
-        const currentCenter = getTouchCenter(e);
-
-        if (initialPinchDistance && initialPinchDistance > 0) {
-          const distanceDelta = initialPinchDistance - currentDistance;
-          const zoomDelta = distanceDelta * (targetZoom * 0.001);
-          targetZoom = Math.max(5, targetZoom + zoomDelta);
-
-          const moveX = (currentCenter.x - lastTouchCenter.x) * (targetZoom * 0.0008);
-          const moveY = (currentCenter.y - lastTouchCenter.y) * (targetZoom * 0.0008);
-
-          targetCamPos.x -= moveX;
-          targetCamPos.y += moveY;
-        }
-
-        initialPinchDistance = currentDistance;
-        lastTouchCenter = currentCenter;
-        return;
-      }
-
       if (isPanDragging && (isCameraMode || isShiftPressed)) {
         triggerCameraTransform();
         getPointerPos(e);
-        
-        const deltaX = (intersectPoint.x - lastPos.x) * 0.6;
-        const deltaY = (intersectPoint.y - lastPos.y) * 0.6;
-
-        targetCamPos.x -= deltaX;
-        targetCamPos.y -= deltaY;
+        targetCamPos.x -= (intersectPoint.x - lastPos.x) * 0.6;
+        targetCamPos.y -= (intersectPoint.y - lastPos.y) * 0.6;
         return;
       }
 
@@ -1244,41 +1015,26 @@
       getPointerPos(e);
 
       dragVelocity.subVectors(intersectPoint, lastPos);
-
       if (dragVelocity.lengthSq() > 0.04) {
         const count = Math.min(Math.floor(dragVelocity.length() * 4) + 1, 5);
-        const clampedImpulse = dragVelocity.clone().multiplyScalar(0.15);
-        if (clampedImpulse.length() > 0.2) clampedImpulse.normalize().multiplyScalar(0.2);
+        const impulse = dragVelocity.clone().multiplyScalar(0.15);
+        if (impulse.length() > 0.2) impulse.normalize().multiplyScalar(0.2);
 
-        spawnCluster(intersectPoint, count, clampedImpulse);
+        spawnCluster(intersectPoint, count, impulse);
         lastPos.copy(intersectPoint);
       }
     }
 
-    function onPointerUp(e) {
-      if (e.touches && e.touches.length < 2) {
-        initialPinchDistance = null;
-      }
-      if (!e.touches || e.touches.length === 0) {
-        isInteracting = false;
-        isPanDragging = false;
-        initialPinchDistance = null;
-      }
+    function onPointerUp() {
+      isInteracting = false;
+      isPanDragging = false;
     }
 
     window.addEventListener('wheel', (e) => {
       if (e.target.closest('#ui-container') || e.target.closest('#mode-floating-btn')) return;
       initAudio();
       triggerCameraTransform();
-
-      getPointerPos(e);
-      const zoomFactor = e.deltaY * 0.00075 * targetZoom;
-      targetZoom = Math.max(5, targetZoom + zoomFactor);
-
-      if (e.deltaY < 0) {
-        targetCamPos.x += (intersectPoint.x - targetCamPos.x) * 0.04;
-        targetCamPos.y += (intersectPoint.y - targetCamPos.y) * 0.04;
-      }
+      targetZoom = Math.max(5, targetZoom + e.deltaY * 0.00075 * targetZoom);
     }, { passive: true });
 
     function spawnCluster(pos, count, impulse, options = {}) {
@@ -1288,37 +1044,17 @@
           oldest.destroy();
         }
 
-        const offset = new THREE.Vector3(
-          (Math.random() - 0.5) * 1.2,
-          (Math.random() - 0.5) * 1.2,
-          (Math.random() - 0.5) * 0.8
-        );
-        const spawnPos = pos.clone().add(offset);
-        const p = new ChibiParticle(spawnPos.x, spawnPos.y, spawnPos.z, impulse, options);
-
+        const offset = new THREE.Vector3((Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 0.8);
+        const p = new ChibiParticle(pos.x + offset.x, pos.y + offset.y, pos.z + offset.z, impulse, options);
         scene.add(p.mesh);
         particles.push(p);
       }
-      
-      const speedPitch = 0.85 + Math.min(impulse.length() * 1.2, 0.7);
-      playPokoSound(speedPitch, false, pos);
+      playPokoSound(0.85 + Math.min(impulse.length() * 1.2, 0.7), false, pos);
     }
 
     window.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
-    
-    window.addEventListener('touchstart', (e) => {
-      if (e.target.closest('#ui-container') || e.target.closest('#mode-floating-btn')) return;
-      initAudio();
-      if (e.touches.length === 2) {
-        initialPinchDistance = getTouchDistance(e);
-        lastTouchCenter = getTouchCenter(e);
-        triggerCameraTransform();
-      }
-    }, { passive: true });
-    window.addEventListener('touchmove', onPointerMove, { passive: true });
-    window.addEventListener('touchend', onPointerUp, { passive: true });
 
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -1327,7 +1063,7 @@
     });
 
     // ==========================================
-    // 5. 【④ 修正】無制限かつ完全独立な複数巨大凝集体生成ロジック
+    // 5. 【④ 修正】複数個所の完全独立・無制限粒子凝集システム
     // ==========================================
     function handleCollisionsAndFusion() {
       if (reactivityFactor <= 0.01) return;
@@ -1340,35 +1076,26 @@
           const p2 = particles[j];
           if (!p2 || p2.life <= 0 || p2.fusionCooldown > 0) continue;
 
-          // 画面内の「場所」に関係なく局所の距離だけで絶対判定
+          // 場所に一切関わらず局所の接触距離のみで判定
           const dist = p1.mesh.position.distanceTo(p2.mesh.position);
-          const fusionRadiusThresh = (p1.radius + p2.radius) * 1.05; 
-
-          if (dist < fusionRadiusThresh) {
-            // 接触した瞬間に無制限に合体進化を発生させる
+          if (dist < (p1.radius + p2.radius) * 1.05) {
             p1.life = 0;
             p2.life = 0;
 
             const newType = Math.max(p1.type, p2.type) + 1;
-            const maxLifeBonus = Math.min(Math.max(p1.lifeBonus, p2.lifeBonus) * 1.25, 4.0);
-            const maxRadius = Math.min(Math.max(p1.radius, p2.radius) * 1.18, 4.2);
-            const maxAttraction = Math.min(Math.max(p1.attractionPower, p2.attractionPower) * 1.3, 0.06);
-
-            const latestHue = (p1.type >= p2.type) ? p1.hue : p2.hue;
-            const newHue = latestHue + 0.05;
-
             const fusionPos = new THREE.Vector3().addVectors(p1.mesh.position, p2.mesh.position).multiplyScalar(0.5);
             const fusionVel = new THREE.Vector3().addVectors(p1.velocity, p2.velocity).multiplyScalar(0.5);
 
             playPokoSound(1.2 + Math.min(newType, 10) * 0.1, true, fusionPos);
 
+            // 画面のどこであっても独立して新たな凝集体が生成・巨大化
             spawnCluster(fusionPos, 1, fusionVel, {
               type: newType,
-              radius: maxRadius,
-              hue: newHue,
-              attractionPower: maxAttraction,
-              lifeBonus: maxLifeBonus,
-              fusionCooldown: 18
+              radius: Math.min(Math.max(p1.radius, p2.radius) * 1.18, 4.2),
+              hue: ((p1.type >= p2.type ? p1.hue : p2.hue) + 0.05),
+              attractionPower: Math.min(Math.max(p1.attractionPower, p2.attractionPower) * 1.3, 0.06),
+              lifeBonus: Math.min(Math.max(p1.lifeBonus, p2.lifeBonus) * 1.25, 4.0),
+              fusionCooldown: 15
             });
 
             break;
@@ -1379,21 +1106,7 @@
 
     function updateAudioVoices() {
       if (!isAudioEnabled || !audioCtx || audioCtx.state !== 'running') return;
-
-      if (audioCtx.listener) {
-        if (audioCtx.listener.positionX) {
-          audioCtx.listener.positionX.setValueAtTime(camera.position.x, audioCtx.currentTime);
-          audioCtx.listener.positionY.setValueAtTime(camera.position.y, audioCtx.currentTime);
-          audioCtx.listener.positionZ.setValueAtTime(camera.position.z, audioCtx.currentTime);
-        } else {
-          audioCtx.listener.setPosition(camera.position.x, camera.position.y, camera.position.z);
-        }
-      }
-
-      const activeParticles = particles
-        .slice()
-        .sort((a, b) => b.velocity.lengthSq() - a.velocity.lengthSq())
-        .slice(0, MAX_VOICES);
+      const activeParticles = particles.slice().sort((a, b) => b.velocity.lengthSq() - a.velocity.lengthSq()).slice(0, MAX_VOICES);
 
       for (let i = 0; i < MAX_VOICES; i++) {
         const voice = voicePool[i];
@@ -1401,24 +1114,13 @@
 
         if (p && p.life > 0 && volMotion > 0.001) {
           const speed = p.velocity.length();
-          const targetFreq = p.baseFreq + (speed * 320);
-          
-          const distToCam = camera.position.distanceTo(p.mesh.position);
-          const distanceGain = Math.max(0.05, 1.0 - (distToCam / 120.0)); 
-
-          const targetVol = Math.min(0.0012 + (speed * 0.015), 0.018) * Math.max(0, p.life) * volMotion * distanceGain;
-
-          voice.osc.frequency.setTargetAtTime(targetFreq, audioCtx.currentTime, 0.08);
-          voice.gain.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.08);
+          voice.osc.frequency.setTargetAtTime(p.baseFreq + (speed * 320), audioCtx.currentTime, 0.08);
+          voice.gain.gain.setTargetAtTime(Math.min(0.0012 + (speed * 0.015), 0.018) * volMotion, audioCtx.currentTime, 0.08);
 
           if (voice.panner && voice.panner.positionX) {
             voice.panner.positionX.setTargetAtTime(p.mesh.position.x, audioCtx.currentTime, 0.05);
             voice.panner.positionY.setTargetAtTime(p.mesh.position.y, audioCtx.currentTime, 0.05);
             voice.panner.positionZ.setTargetAtTime(p.mesh.position.z, audioCtx.currentTime, 0.05);
-          } else if (voice.panner && voice.panner.pan) {
-            const relX = (p.mesh.position.x - camera.position.x) / (camera.position.z * 0.5);
-            const panVal = Math.max(-1, Math.min(1, relX));
-            voice.panner.pan.setTargetAtTime(panVal, audioCtx.currentTime, 0.05);
           }
         } else {
           voice.gain.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.08);
@@ -1427,61 +1129,32 @@
     }
 
     // ==========================================
-    // 6. メインフレーム描画
+    // 6. メインアニメーションループ
     // ==========================================
     function animate() {
       requestAnimationFrame(animate);
 
       globalTime += 0.01;
-
       targetCamPos.z = targetZoom;
       camera.position.lerp(targetCamPos, 0.055);
 
-      // ①＆② 3D環境ノイズ・風・地形の更新
-      updateEnvironmentField();
+      // ①＆② 3D環境・風・地形の更新
+      update3DEnvironment();
 
       const vFOV = THREE.MathUtils.degToRad(camera.fov);
       const visibleHeight = 2 * Math.tan(vFOV / 2) * camera.position.z;
-      const visibleWidth = visibleHeight * camera.aspect;
-      const bounds = { x: (visibleWidth / 2) * 0.85, y: (visibleHeight / 2) * 0.85 };
+      const bounds = { x: (visibleHeight * camera.aspect / 2) * 0.85, y: (visibleHeight / 2) * 0.85 };
 
       for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
-        const neighbors = [];
-        for (let j = 0; j < particles.length; j += 2) { 
-          if (i !== j) neighbors.push(particles[j]);
-        }
-        p.applyFlockingRule(neighbors, bounds);
+        particles[i].applyFlockingRule(particles, bounds);
       }
 
-      // ④ 重複なしの独立巨大凝集計算
+      // ④ 独立した複数凝集体の衝突処理
       handleCollisionsAndFusion();
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         const alive = p.update(particles);
-
-        if (p.shouldMitosis) {
-          p.shouldMitosis = false;
-          p.energyAccumulated = 0;
-          p.fusionCooldown = 50;
-          
-          const splitVel = new THREE.Vector3(
-            (Math.random() - 0.5) * 0.05,
-            (Math.random() - 0.5) * 0.05,
-            (Math.random() - 0.5) * 0.05
-          );
-
-          spawnCluster(p.mesh.position.clone(), 1, splitVel, {
-            type: p.type,
-            radius: p.radius * 0.9,
-            hue: p.hue + 0.02,
-            attractionPower: p.attractionPower,
-            lifeBonus: p.lifeBonus,
-            fusionCooldown: 50
-          });
-          playPokoSound(1.5, false, p.mesh.position);
-        }
 
         if (p.decomposed) {
           const parentPos = p.mesh.position.clone();
@@ -1499,7 +1172,7 @@
             hue: p.hue,
             attractionPower: Math.max(0.007, p.attractionPower / 1.2),
             lifeBonus: Math.max(1.0, p.lifeBonus / 1.15),
-            fusionCooldown: 35
+            fusionCooldown: 30
           });
           continue;
         }
@@ -1511,7 +1184,6 @@
       }
 
       updateAudioVoices();
-
       renderer.render(scene, camera);
     }
 
