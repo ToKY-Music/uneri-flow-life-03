@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>UNERI Flow - 3D Terrain & Vector Dynamics</title>
+  <title>UNERI Flow - High Performance Ecosystem</title>
   <style>
     body {
       margin: 0;
@@ -29,19 +29,14 @@
       font-size: 0.85rem;
       font-weight: bold;
       backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       box-shadow: 0 0 15px rgba(0, 255, 210, 0.25);
       display: flex;
       align-items: center;
       gap: 8px;
-      transition: all 0.25s ease;
+      transition: transform 0.2s ease, background-color 0.2s ease;
       pointer-events: auto;
-    }
-
-    #mode-floating-btn:hover {
-      background: rgba(20, 30, 48, 0.95);
-      border-color: #00ffd2;
-      transform: scale(1.05);
-      box-shadow: 0 0 20px rgba(0, 255, 210, 0.4);
+      will-change: transform;
     }
 
     #mode-floating-btn.active {
@@ -61,13 +56,15 @@
       padding: 16px;
       border-radius: 14px;
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(0, 255, 210, 0.3);
       width: 290px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-      transition: all 0.3s ease;
+      transition: width 0.25s ease, height 0.25s ease, padding 0.25s ease, border-radius 0.25s ease;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
+      will-change: width, height, padding;
     }
 
     #ui-container.collapsed {
@@ -392,7 +389,7 @@
 
   <script>
     // ==========================================
-    // 0. グローバル変数 & UI連動
+    // 0. UI・制御変数
     // ==========================================
     let globalTime = 0;
     let expFactor = 2.2;
@@ -513,11 +510,11 @@
     bindSlider('vol-fusion-slider', 'vol-fusion-val', v => volFusion = v);
 
     // ==========================================
-    // 1. Web Audio API 立体音響
+    // 1. Web Audio API (軽量化ボイスプール)
     // ==========================================
     let audioCtx = null;
     let masterFilter = null;
-    const MAX_VOICES = 8;
+    const MAX_VOICES = 4; // サウンド処理のボイス数を削減して軽量化
     const voicePool = [];
 
     function initAudio() {
@@ -539,10 +536,9 @@
             let panner = null;
             if (audioCtx.createPanner) {
               panner = audioCtx.createPanner();
-              panner.panningModel = 'HRTF';
+              panner.panningModel = 'equalpower'; // 高速なパンニングモデル
               panner.distanceModel = 'inverse';
               panner.refDistance = 5;
-              panner.rolloffFactor = 1.5;
             }
 
             osc.type = 'triangle';
@@ -608,7 +604,7 @@
     }
 
     // ==========================================
-    // 2. Three.js セットアップ & 軌道3Dカメラ
+    // 2. Three.js セットアップ
     // ==========================================
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x04060a, 0.0008); 
@@ -643,9 +639,9 @@
       resetCameraPos();
     });
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // ピクセル比の上限を落としてスマホ負荷を大幅軽減
     document.body.appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0x223344, 0.9);
@@ -663,9 +659,10 @@
     const pointer = new THREE.Vector2();
 
     // ==========================================
-    // 2.5 細密3D地形 & 風のベクトル矢印場
+    // 2.5 高速化された3D地形 & 風のベクトル矢印場
     // ==========================================
-    const GRID_SIZE = 80;
+    // スマホ向けにグリッド解像度を最適化 (40x40)
+    const GRID_SIZE = 40;
     const TERRAIN_WIDTH = 240;
     const fieldPlaneGeo = new THREE.PlaneGeometry(TERRAIN_WIDTH, TERRAIN_WIDTH, GRID_SIZE, GRID_SIZE);
     fieldPlaneGeo.rotateX(-Math.PI / 2);
@@ -690,25 +687,23 @@
       return (wave1 * 4.5 + wave2) - 10; 
     }
 
-    // ① 重さによる「わずかな」地形の沈み込み計算
+    // ① 大型粒子による凹み計算（体の高さの1/3以下に厳格にクランプ）
     function getTerrainHeight(x, z, time) {
       let baseH = getTerrainBaseHeight(x, z, time);
       
-      // 大型粒子の位置に応じてわずかな窪みを加算
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
-        if (p.type > 0) {
-          const dx = x - p.mesh.position.x;
-          const dz = z - p.mesh.position.z;
-          const distSq = dx * dx + dz * dz;
-          const radiusSq = (p.radius * 2.5) * (p.radius * 2.5);
-          
-          if (distSq < radiusSq) {
-            // 窪みの深さを従来の1/5以下（最大 -0.4 程度）の「わずかな凹み」に抑制
-            const dentFactor = Math.cos((Math.sqrt(distSq) / (p.radius * 2.5)) * (Math.PI / 2));
-            const maxDent = Math.min(0.4, (p.radius - 0.28) * 0.12);
-            baseH -= dentFactor * maxDent;
-          }
+      for (let i = 0; i < largeParticlesCache.length; i++) {
+        const p = largeParticlesCache[i];
+        const dx = x - p.mesh.position.x;
+        const dz = z - p.mesh.position.z;
+        const distSq = dx * dx + dz * dz;
+        const radiusSq = (p.radius * 2.2) * (p.radius * 2.2);
+        
+        if (distSq < radiusSq) {
+          const dentFactor = Math.cos((Math.sqrt(distSq) / (p.radius * 2.2)) * (Math.PI / 2));
+          // ★ ① 最大くぼみ深度を「粒子の高さ(直径)の1/3」＝「半径 * (2/3)」に制限
+          const maxAllowedDent = (p.radius * 2.0) / 3.0; 
+          const currentDent = Math.min(maxAllowedDent, (p.radius - 0.28) * 0.18);
+          baseH -= dentFactor * currentDent;
         }
       }
       return baseH;
@@ -721,12 +716,13 @@
       return new THREE.Vector3(windX, windY, windZ);
     }
 
+    // 矢印数を削減して軽量化
     const arrowGroup = new THREE.Group();
-    const ARROW_COUNT_X = 12;
-    const ARROW_COUNT_Z = 12;
+    const ARROW_COUNT_X = 8;
+    const ARROW_COUNT_Z = 8;
     const arrows = [];
 
-    const arrowGeo = new THREE.ConeGeometry(0.2, 0.7, 5);
+    const arrowGeo = new THREE.ConeGeometry(0.2, 0.7, 4);
     arrowGeo.rotateX(Math.PI / 2);
     const arrowMat = new THREE.MeshBasicMaterial({
       color: 0x00ffd2,
@@ -768,14 +764,70 @@
     }
 
     // ==========================================
-    // 3. 粒子クラス
+    // 3. ② 空間分割グリッド (Spatial Hash Grid) によるO(N)超高速衝突判定
     // ==========================================
-    const MAX_PARTICLES = 1000;
+    const GRID_CELL_SIZE = 8.0;
+    const spatialGrid = new Map();
+    let largeParticlesCache = []; // 大型粒子のキャッシュ配列（毎フレーム検索回避用）
+
+    function getKey(x, y, z) {
+      const gx = Math.floor(x / GRID_CELL_SIZE);
+      const gy = Math.floor(y / GRID_CELL_SIZE);
+      const gz = Math.floor(z / GRID_CELL_SIZE);
+      return `${gx},${gy},${gz}`;
+    }
+
+    function updateSpatialGrid() {
+      spatialGrid.clear();
+      largeParticlesCache = [];
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        if (p.type > 0) largeParticlesCache.push(p);
+
+        const key = getKey(p.mesh.position.x, p.mesh.position.y, p.mesh.position.z);
+        let cell = spatialGrid.get(key);
+        if (!cell) {
+          cell = [];
+          spatialGrid.set(key, cell);
+        }
+        cell.push(p);
+      }
+    }
+
+    function getNearbyParticles(p) {
+      const neighbors = [];
+      const gx = Math.floor(p.mesh.position.x / GRID_CELL_SIZE);
+      const gy = Math.floor(p.mesh.position.y / GRID_CELL_SIZE);
+      const gz = Math.floor(p.mesh.position.z / GRID_CELL_SIZE);
+
+      for (let x = -1; x <= 1; x++) {
+        for (let y = -1; y <= 1; y++) {
+          for (let z = -1; z <= 1; z++) {
+            const key = `${gx + x},${gy + y},${gz + z}`;
+            const cell = spatialGrid.get(key);
+            if (cell) {
+              for (let i = 0; i < cell.length; i++) {
+                if (cell[i] !== p) neighbors.push(cell[i]);
+              }
+            }
+          }
+        }
+      }
+      return neighbors;
+    }
+
+    // ==========================================
+    // 3.5 粒子クラス
+    // ==========================================
+    const MAX_PARTICLES = 600; // スマホパフォーマンス最適値
     let particles = [];
 
     function clearAllParticles() {
       for (let i = 0; i < particles.length; i++) particles[i].destroy();
       particles = [];
+      spatialGrid.clear();
+      largeParticlesCache = [];
     }
 
     document.getElementById('clear-particles-btn').addEventListener('click', (e) => {
@@ -783,7 +835,7 @@
       clearAllParticles();
     });
 
-    const baseSphereGeo = new THREE.SphereGeometry(0.28, 16, 16);
+    const baseSphereGeo = new THREE.SphereGeometry(0.28, 12, 12); // ポリゴン数最適化
 
     class ChibiParticle {
       constructor(x, y, z, initialVel, options = {}) {
@@ -873,7 +925,7 @@
         }
       }
 
-      update(allParticles) {
+      update(neighbors) {
         const mass = Math.pow(this.radius / 0.28, 1.5);
         const gravity = 0.008 * Math.min(mass, 8.0);
         this.velocity.y -= gravity;
@@ -900,7 +952,6 @@
           this.velocity.x += slopeX;
           this.velocity.z += slopeZ;
 
-          // もちもち脈動（呼吸）モーショングラフィックス
           const breath = 1.0 + Math.sin(globalTime * 3.0 + this.age * 0.05) * 0.08;
           const squish = Math.min(1.3, (1.0 + (mass * 0.04))) * breath;
           const baseScale = this.radius / 0.28;
@@ -926,17 +977,15 @@
         }
 
         let proximitySupport = 0;
-        for (let i = 0; i < allParticles.length; i++) {
-          const other = allParticles[i];
-          if (other !== this) {
-            const dist = this.mesh.position.distanceTo(other.mesh.position);
-            if (dist < 12.0) {
-              proximitySupport += (1.0 / Math.pow(dist + 0.1, expFactor)) * 0.0035;
-            }
+        for (let i = 0; i < neighbors.length; i++) {
+          const other = neighbors[i];
+          const dist = this.mesh.position.distanceTo(other.mesh.position);
+          if (dist < 12.0) {
+            proximitySupport += (1.0 / Math.pow(dist + 0.1, expFactor)) * 0.0035;
           }
         }
 
-        let totalSupport = (proximitySupport > thresholdValue) ? (proximitySupport + allParticles.length * 0.00003) : 0;
+        let totalSupport = (proximitySupport > thresholdValue) ? (proximitySupport + particles.length * 0.00003) : 0;
         this.life -= Math.max(0.0003, this.baseDecay - totalSupport);
         this.material.opacity = Math.max(0, this.life * 0.92);
 
@@ -978,7 +1027,6 @@
       initAudio();
 
       if (e.touches && e.touches.length === 2) {
-        // ① 2本指タッチ操作（ズーム ＆ パン）
         touchStartDist = getTouchDistance(e);
         touchStartRadius = cameraRadius;
         previousPanCenter = getTouchCenter(e);
@@ -1010,14 +1058,12 @@
 
     function onPointerMove(e) {
       if (e.touches && e.touches.length === 2 && isTwoFingerPan) {
-        // ピンチズーム
         const dist = getTouchDistance(e);
         if (touchStartDist > 0) {
           const factor = touchStartDist / dist;
           cameraRadius = touchStartRadius * factor;
         }
 
-        // ① 2本指スライドによるカメラ位置の平行移動（パン）
         const currentCenter = getTouchCenter(e);
         const deltaX = currentCenter.x - previousPanCenter.x;
         const deltaY = currentCenter.y - previousPanCenter.y;
@@ -1041,12 +1087,10 @@
       const deltaX = clientX - previousTouchPos.x;
       const deltaY = clientY - previousTouchPos.y;
 
-      // ① PCキーボード/マウスでの平行移動判定 (Shiftキー または 右クリック)
       const isShiftOrRightClick = e.shiftKey || e.button === 2;
 
       if (isCameraMode || isShiftOrRightClick) {
         if (isShiftOrRightClick) {
-          // PCパン操作
           const panSpeed = 0.05 * (cameraRadius / 45);
           const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
           const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
@@ -1054,13 +1098,11 @@
           cameraTarget.add(right.multiplyScalar(-deltaX * panSpeed));
           cameraTarget.add(up.multiplyScalar(deltaY * panSpeed));
         } else {
-          // 3D角度回転
           cameraTheta -= deltaX * 0.008;
           cameraPhi -= deltaY * 0.008;
         }
         updateCameraPosition();
       } else {
-        // 粒子連続発生
         if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
           pointer.x = (clientX / window.innerWidth) * 2 - 1;
           pointer.y = -(clientY / window.innerHeight) * 2 + 1;
@@ -1093,7 +1135,6 @@
       updateCameraPosition();
     }, { passive: true });
 
-    // コンテクストメニュー（右クリックメニュー）の抑止
     window.addEventListener('contextmenu', (e) => e.preventDefault());
 
     window.addEventListener('touchstart', onPointerDown, { passive: false });
@@ -1126,7 +1167,7 @@
     });
 
     // ==========================================
-    // 5. ③ 局所衝突 & 融合進化
+    // 5. O(N) 高速衝突 ＆ 融合進化
     // ==========================================
     function handleCollisionsAndFusion() {
       if (reactivityFactor <= 0.01) return;
@@ -1135,8 +1176,11 @@
         const p1 = particles[i];
         if (!p1 || p1.life <= 0 || p1.fusionCooldown > 0) continue;
 
-        for (let j = i + 1; j < particles.length; j++) {
-          const p2 = particles[j];
+        // グリッド検索で近接する粒子のみと衝突判定
+        const neighbors = getNearbyParticles(p1);
+
+        for (let j = 0; j < neighbors.length; j++) {
+          const p2 = neighbors[j];
           if (!p2 || p2.life <= 0 || p2.fusionCooldown > 0) continue;
 
           const dist = p1.mesh.position.distanceTo(p2.mesh.position);
@@ -1167,25 +1211,27 @@
 
     function updateAudioVoices() {
       if (!isAudioEnabled || !audioCtx || audioCtx.state !== 'running') return;
-      const activeParticles = particles.slice().sort((a, b) => b.velocity.lengthSq() - a.velocity.lengthSq()).slice(0, MAX_VOICES);
-
-      for (let i = 0; i < MAX_VOICES; i++) {
-        const voice = voicePool[i];
-        const p = activeParticles[i];
-
-        if (p && p.life > 0 && volMotion > 0.001) {
+      
+      let count = 0;
+      for (let i = 0; i < particles.length && count < MAX_VOICES; i++) {
+        const p = particles[i];
+        if (p.type > 0 || Math.random() < 0.1) {
+          const voice = voicePool[count];
           const speed = p.velocity.length();
-          voice.osc.frequency.setTargetAtTime(p.baseFreq + (speed * 320), audioCtx.currentTime, 0.08);
-          voice.gain.gain.setTargetAtTime(Math.min(0.0012 + (speed * 0.015), 0.018) * volMotion, audioCtx.currentTime, 0.08);
+          voice.osc.frequency.setTargetAtTime(p.baseFreq + (speed * 320), audioCtx.currentTime, 0.1);
+          voice.gain.gain.setTargetAtTime(Math.min(0.0012 + (speed * 0.015), 0.018) * volMotion, audioCtx.currentTime, 0.1);
 
           if (voice.panner && voice.panner.positionX) {
-            voice.panner.positionX.setTargetAtTime(p.mesh.position.x, audioCtx.currentTime, 0.05);
-            voice.panner.positionY.setTargetAtTime(p.mesh.position.y, audioCtx.currentTime, 0.05);
-            voice.panner.positionZ.setTargetAtTime(p.mesh.position.z, audioCtx.currentTime, 0.05);
+            voice.panner.positionX.setTargetAtTime(p.mesh.position.x, audioCtx.currentTime, 0.1);
+            voice.panner.positionY.setTargetAtTime(p.mesh.position.y, audioCtx.currentTime, 0.1);
+            voice.panner.positionZ.setTargetAtTime(p.mesh.position.z, audioCtx.currentTime, 0.1);
           }
-        } else {
-          voice.gain.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.08);
+          count++;
         }
+      }
+
+      for (let i = count; i < MAX_VOICES; i++) {
+        voicePool[i].gain.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.1);
       }
     }
 
@@ -1199,19 +1245,24 @@
 
       globalTime += 0.01;
 
+      // ② 高速空間グリッドの更新
+      updateSpatialGrid();
+
       update3DEnvironment();
 
       for (let i = 0; i < particles.length; i++) {
-        particles[i].applyFlockingRule(particles);
+        const p = particles[i];
+        const neighbors = getNearbyParticles(p);
+        p.applyFlockingRule(neighbors);
       }
 
       handleCollisionsAndFusion();
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        const alive = p.update(particles);
+        const neighbors = getNearbyParticles(p);
+        const alive = p.update(neighbors);
 
-        // ② & ④ 分解して「一つ前の段階の粒子」に還元され跡地から新生態系がスタート
         if (p.decomposed) {
           const parentPos = p.mesh.position.clone();
           const parentVel = p.velocity.clone();
@@ -1222,7 +1273,6 @@
 
           playPokoSound(0.9 + prevType * 0.1, true, parentPos);
 
-          // 一つ前の段階の粒子（2〜3個）へ再分解
           const spawnCount = prevType === 0 ? 3 : 2;
           for (let k = 0; k < spawnCount; k++) {
             const spreadVel = new THREE.Vector3(
@@ -1237,7 +1287,7 @@
               hue: p.hue + (k * 0.03),
               attractionPower: Math.max(0.007, p.attractionPower / 1.15),
               lifeBonus: Math.max(1.0, p.lifeBonus / 1.1),
-              fusionCooldown: 40 // 再融合までのクールダウン時間
+              fusionCooldown: 40
             });
           }
           continue;
