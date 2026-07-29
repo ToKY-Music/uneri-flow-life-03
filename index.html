@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>UNERI Flow - High Performance Ecosystem</title>
+  <title>UNERI Flow - Pure Terrain & High Performance Loop</title>
   <style>
     body {
       margin: 0;
@@ -407,6 +407,14 @@
 
     let isCameraMode = false; 
 
+    // ② 高速化用モジュール共有ワークベクトル（アロケーションカット）
+    const VEC_COHESION = new THREE.Vector3();
+    const VEC_SEPARATION = new THREE.Vector3();
+    const VEC_ALIGNMENT = new THREE.Vector3();
+    const VEC_PUSH = new THREE.Vector3();
+    const VEC_WIND = new THREE.Vector3();
+    const VEC_TEMP = new THREE.Vector3();
+
     const uiContainer = document.getElementById('ui-container');
     const toggleBtn = document.getElementById('toggle-btn');
     const resetCamBtn = document.getElementById('reset-cam-btn');
@@ -514,7 +522,7 @@
     // ==========================================
     let audioCtx = null;
     let masterFilter = null;
-    const MAX_VOICES = 4; // サウンド処理のボイス数を削減して軽量化
+    const MAX_VOICES = 4;
     const voicePool = [];
 
     function initAudio() {
@@ -536,7 +544,7 @@
             let panner = null;
             if (audioCtx.createPanner) {
               panner = audioCtx.createPanner();
-              panner.panningModel = 'equalpower'; // 高速なパンニングモデル
+              panner.panningModel = 'equalpower';
               panner.distanceModel = 'inverse';
               panner.refDistance = 5;
             }
@@ -641,7 +649,7 @@
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // ピクセル比の上限を落としてスマホ負荷を大幅軽減
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     document.body.appendChild(renderer.domElement);
 
     const ambientLight = new THREE.AmbientLight(0x223344, 0.9);
@@ -659,9 +667,8 @@
     const pointer = new THREE.Vector2();
 
     // ==========================================
-    // 2.5 高速化された3D地形 & 風のベクトル矢印場
+    // 2.5 3D地形 & 風のベクトル矢印場 (① くぼみ完全削除)
     // ==========================================
-    // スマホ向けにグリッド解像度を最適化 (40x40)
     const GRID_SIZE = 40;
     const TERRAIN_WIDTH = 240;
     const fieldPlaneGeo = new THREE.PlaneGeometry(TERRAIN_WIDTH, TERRAIN_WIDTH, GRID_SIZE, GRID_SIZE);
@@ -681,42 +688,21 @@
     fieldMesh.position.set(0, -10, 0);
     scene.add(fieldMesh);
 
-    function getTerrainBaseHeight(x, z, time) {
+    // ★ ① 地形の純粋な基本高度（粒子による沈み込みを完全に削除し、形状収斂を防止）
+    function getTerrainHeight(x, z, time) {
       const wave1 = Math.sin(x * 0.035 + time * 0.8) * Math.cos(z * 0.035);
       const wave2 = Math.cos(x * 0.018 - time * 0.5) * Math.sin(z * 0.022) * 2.5;
       return (wave1 * 4.5 + wave2) - 10; 
     }
 
-    // ① 大型粒子による凹み計算（体の高さの1/3以下に厳格にクランプ）
-    function getTerrainHeight(x, z, time) {
-      let baseH = getTerrainBaseHeight(x, z, time);
-      
-      for (let i = 0; i < largeParticlesCache.length; i++) {
-        const p = largeParticlesCache[i];
-        const dx = x - p.mesh.position.x;
-        const dz = z - p.mesh.position.z;
-        const distSq = dx * dx + dz * dz;
-        const radiusSq = (p.radius * 2.2) * (p.radius * 2.2);
-        
-        if (distSq < radiusSq) {
-          const dentFactor = Math.cos((Math.sqrt(distSq) / (p.radius * 2.2)) * (Math.PI / 2));
-          // ★ ① 最大くぼみ深度を「粒子の高さ(直径)の1/3」＝「半径 * (2/3)」に制限
-          const maxAllowedDent = (p.radius * 2.0) / 3.0; 
-          const currentDent = Math.min(maxAllowedDent, (p.radius - 0.28) * 0.18);
-          baseH -= dentFactor * currentDent;
-        }
-      }
-      return baseH;
-    }
-
-    function getWindVector(x, y, z, time) {
+    function getWindVector(x, y, z, time, outVec) {
       const windX = Math.sin(x * 0.02 + time * 1.2) * Math.cos(z * 0.02) * 0.08;
       const windY = Math.cos(y * 0.03 + time * 0.8) * 0.02;
       const windZ = Math.cos(x * 0.02) * Math.sin(z * 0.02 + time * 1.0) * 0.08;
-      return new THREE.Vector3(windX, windY, windZ);
+      outVec.set(windX, windY, windZ);
+      return outVec;
     }
 
-    // 矢印数を削減して軽量化
     const arrowGroup = new THREE.Group();
     const ARROW_COUNT_X = 8;
     const ARROW_COUNT_Z = 8;
@@ -757,18 +743,17 @@
       arrows.forEach(arrow => {
         const h = getTerrainHeight(arrow.position.x, arrow.position.z, globalTime);
         arrow.position.y = h + 2.5;
-        const wind = getWindVector(arrow.position.x, arrow.position.y, arrow.position.z, globalTime);
-        const targetPos = arrow.position.clone().add(wind.clone().multiplyScalar(10));
-        arrow.lookAt(targetPos);
+        getWindVector(arrow.position.x, arrow.position.y, arrow.position.z, globalTime, VEC_WIND);
+        VEC_TEMP.copy(arrow.position).addScaledVector(VEC_WIND, 10);
+        arrow.lookAt(VEC_TEMP);
       });
     }
 
     // ==========================================
-    // 3. ② 空間分割グリッド (Spatial Hash Grid) によるO(N)超高速衝突判定
+    // 3. 空間分割グリッド (Spatial Hash Grid)
     // ==========================================
     const GRID_CELL_SIZE = 8.0;
     const spatialGrid = new Map();
-    let largeParticlesCache = []; // 大型粒子のキャッシュ配列（毎フレーム検索回避用）
 
     function getKey(x, y, z) {
       const gx = Math.floor(x / GRID_CELL_SIZE);
@@ -779,12 +764,9 @@
 
     function updateSpatialGrid() {
       spatialGrid.clear();
-      largeParticlesCache = [];
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
-        if (p.type > 0) largeParticlesCache.push(p);
-
         const key = getKey(p.mesh.position.x, p.mesh.position.y, p.mesh.position.z);
         let cell = spatialGrid.get(key);
         if (!cell) {
@@ -795,8 +777,8 @@
       }
     }
 
-    function getNearbyParticles(p) {
-      const neighbors = [];
+    function getNearbyParticles(p, outNeighbors) {
+      outNeighbors.length = 0;
       const gx = Math.floor(p.mesh.position.x / GRID_CELL_SIZE);
       const gy = Math.floor(p.mesh.position.y / GRID_CELL_SIZE);
       const gz = Math.floor(p.mesh.position.z / GRID_CELL_SIZE);
@@ -808,26 +790,25 @@
             const cell = spatialGrid.get(key);
             if (cell) {
               for (let i = 0; i < cell.length; i++) {
-                if (cell[i] !== p) neighbors.push(cell[i]);
+                if (cell[i] !== p) outNeighbors.push(cell[i]);
               }
             }
           }
         }
       }
-      return neighbors;
+      return outNeighbors;
     }
 
     // ==========================================
-    // 3.5 粒子クラス
+    // 3.5 粒子クラス (② 高速化マテリアル・無限生成)
     // ==========================================
-    const MAX_PARTICLES = 600; // スマホパフォーマンス最適値
     let particles = [];
+    const tempNeighborBuffer = [];
 
     function clearAllParticles() {
       for (let i = 0; i < particles.length; i++) particles[i].destroy();
       particles = [];
       spatialGrid.clear();
-      largeParticlesCache = [];
     }
 
     document.getElementById('clear-particles-btn').addEventListener('click', (e) => {
@@ -835,19 +816,22 @@
       clearAllParticles();
     });
 
-    const baseSphereGeo = new THREE.SphereGeometry(0.28, 12, 12); // ポリゴン数最適化
+    const baseSphereGeo = new THREE.SphereGeometry(0.28, 12, 12);
+    
+    // ② マテリアルの共通プール化による描画負荷削減
+    const sharedMaterial = new THREE.MeshPhongMaterial({
+      color: 0x00ffd2,
+      emissive: 0x022018,
+      specular: 0xffffff,
+      shininess: 90,
+      transparent: true,
+      opacity: 0.92
+    });
 
     class ChibiParticle {
       constructor(x, y, z, initialVel, options = {}) {
-        this.material = new THREE.MeshPhongMaterial({
-          color: 0x00ffd2,
-          emissive: 0x022018,
-          specular: 0xffffff,
-          shininess: 90,
-          transparent: true,
-          opacity: 0.92
-        });
-
+        // ② インスタンス生成時の軽量化マテリアル処理
+        this.material = sharedMaterial.clone();
         this.mesh = new THREE.Mesh(baseSphereGeo, this.material);
         this.mesh.position.set(x, y, z);
         
@@ -860,7 +844,7 @@
         this.mesh.scale.setScalar(this.radius / 0.28);
         this.material.color.setHSL(this.hue % 1.0, 0.85, 0.60);
 
-        this.velocity = initialVel.clone().add(new THREE.Vector3(
+        this.velocity = initialVel.clone().add(VEC_TEMP.set(
           (Math.random() - 0.5) * 0.1,
           (Math.random() - 0.5) * 0.1,
           (Math.random() - 0.5) * 0.1
@@ -876,9 +860,9 @@
       }
 
       applyFlockingRule(neighbors) {
-        const cohesion = new THREE.Vector3();
-        const separation = new THREE.Vector3();
-        const alignment = new THREE.Vector3();
+        VEC_COHESION.set(0, 0, 0);
+        VEC_SEPARATION.set(0, 0, 0);
+        VEC_ALIGNMENT.set(0, 0, 0);
         let count = 0;
 
         for (let i = 0; i < neighbors.length; i++) {
@@ -886,31 +870,31 @@
           const dist = this.mesh.position.distanceTo(other.mesh.position);
 
           if (dist > 0 && dist < 7.0) {
-            cohesion.add(other.mesh.position);
-            alignment.add(other.velocity);
+            VEC_COHESION.add(other.mesh.position);
+            VEC_ALIGNMENT.add(other.velocity);
 
             if (dist < (1.1 * (this.radius + other.radius) / 0.56)) {
-              const push = new THREE.Vector3().subVectors(this.mesh.position, other.mesh.position);
-              push.normalize().divideScalar(Math.max(dist, 0.1));
-              separation.add(push);
+              VEC_PUSH.subVectors(this.mesh.position, other.mesh.position);
+              VEC_PUSH.normalize().divideScalar(Math.max(dist, 0.1));
+              VEC_SEPARATION.add(VEC_PUSH);
             }
             count++;
           }
         }
 
         if (count > 0) {
-          cohesion.divideScalar(count);
-          const cohesionForce = new THREE.Vector3().subVectors(cohesion, this.mesh.position).multiplyScalar(this.attractionPower);
-          this.velocity.add(cohesionForce);
-          alignment.divideScalar(count).multiplyScalar(0.02);
-          this.velocity.add(alignment);
-          separation.multiplyScalar(0.025);
-          this.velocity.add(separation);
+          VEC_COHESION.divideScalar(count);
+          VEC_TEMP.subVectors(VEC_COHESION, this.mesh.position).multiplyScalar(this.attractionPower);
+          this.velocity.add(VEC_TEMP);
+          VEC_ALIGNMENT.divideScalar(count).multiplyScalar(0.02);
+          this.velocity.add(VEC_ALIGNMENT);
+          VEC_SEPARATION.multiplyScalar(0.025);
+          this.velocity.add(VEC_SEPARATION);
         }
 
-        const wind = getWindVector(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z, globalTime);
+        getWindVector(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z, globalTime, VEC_WIND);
         const windWeight = Math.max(0.15, 1.0 - (this.radius - 0.28) * 0.25);
-        this.velocity.add(wind.multiplyScalar(windWeight));
+        this.velocity.addScaledVector(VEC_WIND, windWeight);
 
         if (isBoundaryBounceEnabled) {
           const boundX = TERRAIN_WIDTH * 0.42;
@@ -963,6 +947,7 @@
 
         if (this.fusionCooldown > 0) this.fusionCooldown--;
 
+        // 大型粒子（type > 0）は崩壊時間経過で必ず分解フラグを立てる
         if (this.type > 0) {
           let baseDecomposeAge = (220 + this.type * 90) * decayTimeFactor;
           if (this.radius > sizeLimitThreshold) {
@@ -1052,7 +1037,7 @@
         raycaster.ray.intersectPlane(intersectPlane, spawnPos);
         
         if (!spawnPos) spawnPos.set(0, 5, 0);
-        spawnCluster(spawnPos, 4, new THREE.Vector3());
+        spawnCluster(spawnPos, 4, VEC_TEMP.set(0, 0, 0));
       }
     }
 
@@ -1113,8 +1098,8 @@
           raycaster.ray.intersectPlane(intersectPlane, spawnPos);
 
           if (spawnPos) {
-            const impulse = new THREE.Vector3(deltaX * 0.01, -deltaY * 0.01, 0);
-            spawnCluster(spawnPos, 2, impulse);
+            VEC_TEMP.set(deltaX * 0.01, -deltaY * 0.01, 0);
+            spawnCluster(spawnPos, 2, VEC_TEMP);
           }
         }
       }
@@ -1145,14 +1130,10 @@
     window.addEventListener('mousemove', onPointerMove);
     window.addEventListener('mouseup', onPointerUp);
 
+    // ★ ② 粒子上限の撤廃（自動削除処理なしで無限生成・進化に対応）
     function spawnCluster(pos, count, impulse, options = {}) {
       for (let i = 0; i < count; i++) {
-        if (particles.length >= MAX_PARTICLES) {
-          const oldest = particles.shift();
-          oldest.destroy();
-        }
-
-        const offset = new THREE.Vector3((Math.random() - 0.5) * 1.5, Math.random() * 1.0, (Math.random() - 0.5) * 1.5);
+        const offset = VEC_TEMP.set((Math.random() - 0.5) * 1.5, Math.random() * 1.0, (Math.random() - 0.5) * 1.5);
         const p = new ChibiParticle(pos.x + offset.x, pos.y + offset.y, pos.z + offset.z, impulse, options);
         scene.add(p.mesh);
         particles.push(p);
@@ -1167,7 +1148,7 @@
     });
 
     // ==========================================
-    // 5. O(N) 高速衝突 ＆ 融合進化
+    // 5. 局所衝突 ＆ 融合進化
     // ==========================================
     function handleCollisionsAndFusion() {
       if (reactivityFactor <= 0.01) return;
@@ -1176,8 +1157,7 @@
         const p1 = particles[i];
         if (!p1 || p1.life <= 0 || p1.fusionCooldown > 0) continue;
 
-        // グリッド検索で近接する粒子のみと衝突判定
-        const neighbors = getNearbyParticles(p1);
+        const neighbors = getNearbyParticles(p1, tempNeighborBuffer);
 
         for (let j = 0; j < neighbors.length; j++) {
           const p2 = neighbors[j];
@@ -1245,14 +1225,13 @@
 
       globalTime += 0.01;
 
-      // ② 高速空間グリッドの更新
       updateSpatialGrid();
 
       update3DEnvironment();
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
-        const neighbors = getNearbyParticles(p);
+        const neighbors = getNearbyParticles(p, tempNeighborBuffer);
         p.applyFlockingRule(neighbors);
       }
 
@@ -1260,9 +1239,10 @@
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        const neighbors = getNearbyParticles(p);
+        const neighbors = getNearbyParticles(p, tempNeighborBuffer);
         const alive = p.update(neighbors);
 
+        // ★ ② 大型粒子は寿命到来時に「必ず」一つ前のフェーズ（Type - 1）に確実分解・還元
         if (p.decomposed) {
           const parentPos = p.mesh.position.clone();
           const parentVel = p.velocity.clone();
