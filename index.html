@@ -15,7 +15,6 @@
       user-select: none;
     }
 
-    /* ① モード切替ボタンを右下に移動 */
     #mode-floating-btn {
       position: absolute;
       bottom: 20px;
@@ -288,7 +287,6 @@
 </head>
 <body>
 
-  <!-- ① 右下配置へ変更されたボタン -->
   <button id="mode-floating-btn" title="操作モード切替 (Spaceキー)">
     <span id="mode-icon">✨</span>
     <span id="mode-text">粒子発生モード</span>
@@ -319,8 +317,9 @@
         <div class="guide-title">📱 タッチ / マウス操作</div>
         <ul class="guide-list">
           <li><strong>【粒子発生モード】</strong><br>1本指ドラッグ: 粒子を連続生成</li>
-          <li><strong>【視点操作モード】</strong><br>1本指ドラッグ: 3D角度回転 (上下左右)<br>2本指平行ドラッグ: 平行移動</li>
-          <li><strong>【共通】</strong><br>ピンチイン / アウト: ズーム移動</li>
+          <li><strong>【視点操作モード】</strong><br>1本指ドラッグ: 3D角度回転<br>2本指スライド: 平行移動 (パン)</li>
+          <li><strong>【PC操作】</strong><br>Shift + ドラッグ または 右ドラッグ: 平行移動</li>
+          <li><strong>【共通】</strong><br>ピンチ / ホイール: ズーム移動</li>
         </ul>
       </div>
 
@@ -609,21 +608,19 @@
     }
 
     // ==========================================
-    // 2. Three.js セットアップ & ⑤ 軌道3Dカメラ
+    // 2. Three.js セットアップ & 軌道3Dカメラ
     // ==========================================
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x04060a, 0.0008); 
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 50000);
     
-    // カメラの軌道コントロールパラメータ (球面座標系)
     let cameraTarget = new THREE.Vector3(0, 0, 0);
     let cameraRadius = 45;
-    let cameraTheta = 0;            // 左右回転角 (方位角)
-    let cameraPhi = Math.PI * 0.35; // 上下回転角 (仰角)
+    let cameraTheta = 0;            
+    let cameraPhi = Math.PI * 0.35; 
 
     function updateCameraPosition() {
-      // ②&⑤ ピンチインアウト・3D角度回転の確実な追従計算
       cameraRadius = Math.max(8, Math.min(cameraRadius, 150));
       cameraPhi = Math.max(0.05, Math.min(Math.PI * 0.48, cameraPhi));
 
@@ -651,7 +648,6 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     document.body.appendChild(renderer.domElement);
 
-    // ライティング
     const ambientLight = new THREE.AmbientLight(0x223344, 0.9);
     scene.add(ambientLight);
 
@@ -667,13 +663,12 @@
     const pointer = new THREE.Vector2();
 
     // ==========================================
-    // 2.5 ⑨ 細密3D地形 & ⑦ 風のベクトル矢印場
+    // 2.5 細密3D地形 & 風のベクトル矢印場
     // ==========================================
-    // ⑨ メッシュ細密化 (80 x 80)
     const GRID_SIZE = 80;
     const TERRAIN_WIDTH = 240;
     const fieldPlaneGeo = new THREE.PlaneGeometry(TERRAIN_WIDTH, TERRAIN_WIDTH, GRID_SIZE, GRID_SIZE);
-    fieldPlaneGeo.rotateX(-Math.PI / 2); // 床面に水平配置
+    fieldPlaneGeo.rotateX(-Math.PI / 2);
 
     const fieldMat = new THREE.MeshPhongMaterial({
       color: 0x004440,
@@ -689,14 +684,36 @@
     fieldMesh.position.set(0, -10, 0);
     scene.add(fieldMesh);
 
-    // ノイズ地形の高度関数
-    function getTerrainHeight(x, z, time) {
+    function getTerrainBaseHeight(x, z, time) {
       const wave1 = Math.sin(x * 0.035 + time * 0.8) * Math.cos(z * 0.035);
       const wave2 = Math.cos(x * 0.018 - time * 0.5) * Math.sin(z * 0.022) * 2.5;
       return (wave1 * 4.5 + wave2) - 10; 
     }
 
-    // 風場の3Dベクトル取得 (⑦ 風の方向・速度)
+    // ① 重さによる「わずかな」地形の沈み込み計算
+    function getTerrainHeight(x, z, time) {
+      let baseH = getTerrainBaseHeight(x, z, time);
+      
+      // 大型粒子の位置に応じてわずかな窪みを加算
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        if (p.type > 0) {
+          const dx = x - p.mesh.position.x;
+          const dz = z - p.mesh.position.z;
+          const distSq = dx * dx + dz * dz;
+          const radiusSq = (p.radius * 2.5) * (p.radius * 2.5);
+          
+          if (distSq < radiusSq) {
+            // 窪みの深さを従来の1/5以下（最大 -0.4 程度）の「わずかな凹み」に抑制
+            const dentFactor = Math.cos((Math.sqrt(distSq) / (p.radius * 2.5)) * (Math.PI / 2));
+            const maxDent = Math.min(0.4, (p.radius - 0.28) * 0.12);
+            baseH -= dentFactor * maxDent;
+          }
+        }
+      }
+      return baseH;
+    }
+
     function getWindVector(x, y, z, time) {
       const windX = Math.sin(x * 0.02 + time * 1.2) * Math.cos(z * 0.02) * 0.08;
       const windY = Math.cos(y * 0.03 + time * 0.8) * 0.02;
@@ -704,14 +721,13 @@
       return new THREE.Vector3(windX, windY, windZ);
     }
 
-    // ⑦ 風の流れを見える化する発光ベクトル矢印群
     const arrowGroup = new THREE.Group();
     const ARROW_COUNT_X = 12;
     const ARROW_COUNT_Z = 12;
     const arrows = [];
 
     const arrowGeo = new THREE.ConeGeometry(0.2, 0.7, 5);
-    arrowGeo.rotateX(Math.PI / 2); // ポインティング方向調整
+    arrowGeo.rotateX(Math.PI / 2);
     const arrowMat = new THREE.MeshBasicMaterial({
       color: 0x00ffd2,
       transparent: true,
@@ -732,18 +748,16 @@
     scene.add(arrowGroup);
 
     function update3DEnvironment() {
-      // ⑨ 地形高度のアニメーション更新
       const posAttr = fieldPlaneGeo.attributes.position;
       for (let i = 0; i < posAttr.count; i++) {
         const x = posAttr.getX(i);
         const z = posAttr.getZ(i);
         const h = getTerrainHeight(x, z, globalTime);
-        posAttr.setY(i, h + 10); // 地形ローカルY高度
+        posAttr.setY(i, h + 10);
       }
       posAttr.needsUpdate = true;
       fieldPlaneGeo.computeVertexNormals();
 
-      // ⑦ 風ベクトル矢印の回転と高度連動
       arrows.forEach(arrow => {
         const h = getTerrainHeight(arrow.position.x, arrow.position.z, globalTime);
         arrow.position.y = h + 2.5;
@@ -754,7 +768,7 @@
     }
 
     // ==========================================
-    // 3. 粒子クラス (⑥地形判定 ＆ ⑧重力・もちもち変形)
+    // 3. 粒子クラス
     // ==========================================
     const MAX_PARTICLES = 1000;
     let particles = [];
@@ -842,18 +856,14 @@
           this.velocity.add(separation);
         }
 
-        // ⑦ 3D風の影響
         const wind = getWindVector(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z, globalTime);
-        // ⑧ 重い粒子ほど風の影響を受けにくい
         const windWeight = Math.max(0.15, 1.0 - (this.radius - 0.28) * 0.25);
         this.velocity.add(wind.multiplyScalar(windWeight));
 
-        // ③&④ 強化された空間端（跳ね返り）判定
         if (isBoundaryBounceEnabled) {
           const boundX = TERRAIN_WIDTH * 0.42;
           const boundZ = TERRAIN_WIDTH * 0.42;
           const boundYMax = 35;
-          const boundYMin = -15;
 
           if (this.mesh.position.x > boundX) { this.velocity.x -= 0.05; }
           if (this.mesh.position.x < -boundX) { this.velocity.x += 0.05; }
@@ -864,25 +874,21 @@
       }
 
       update(allParticles) {
-        // ⑧ 大型粒子の質量（重力）計算
         const mass = Math.pow(this.radius / 0.28, 1.5);
         const gravity = 0.008 * Math.min(mass, 8.0);
-        this.velocity.y -= gravity; // 重力で下に落ちる
+        this.velocity.y -= gravity;
 
         this.velocity.multiplyScalar(0.96);
         this.mesh.position.add(this.velocity);
         this.age += 1;
 
-        // ⑥ 地形メッシュとの当たり判定 & ⑧ 傾斜の滑り落ち
         const terrainY = getTerrainHeight(this.mesh.position.x, this.mesh.position.z, globalTime);
         const surfaceY = terrainY + this.radius;
 
         if (this.mesh.position.y <= surfaceY) {
-          // 地形より下にめり込まない
           this.mesh.position.y = surfaceY;
-          if (this.velocity.y < 0) this.velocity.y *= -0.2; // 接地時の反発
+          if (this.velocity.y < 0) this.velocity.y *= -0.2;
 
-          // 地形の傾斜（法線勾配）を取得し、谷へ向かって滑り落ちる
           const delta = 0.5;
           const hL = getTerrainHeight(this.mesh.position.x - delta, this.mesh.position.z, globalTime);
           const hR = getTerrainHeight(this.mesh.position.x + delta, this.mesh.position.z, globalTime);
@@ -894,12 +900,12 @@
           this.velocity.x += slopeX;
           this.velocity.z += slopeZ;
 
-          // ⑧ もちもち形状変化 (接地すると横に広がり縦に押しつぶされる)
-          const squish = Math.min(1.4, 1.0 + (mass * 0.05));
+          // もちもち脈動（呼吸）モーショングラフィックス
+          const breath = 1.0 + Math.sin(globalTime * 3.0 + this.age * 0.05) * 0.08;
+          const squish = Math.min(1.3, (1.0 + (mass * 0.04))) * breath;
           const baseScale = this.radius / 0.28;
           this.mesh.scale.set(baseScale * squish, baseScale / (squish * 0.85), baseScale * squish);
         } else {
-          // 空中では元の丸い球体に戻る
           const baseScale = this.radius / 0.28;
           this.mesh.scale.set(baseScale, baseScale, baseScale);
         }
@@ -919,7 +925,6 @@
           return true; 
         }
 
-        // 孤独度の判定
         let proximitySupport = 0;
         for (let i = 0; i < allParticles.length; i++) {
           const other = allParticles[i];
@@ -946,12 +951,14 @@
     }
 
     // ==========================================
-    // 4. ②&⑤ タッチ・ピンチ・回転操作
+    // 4. タッチ・ピンチ・パン・回転操作
     // ==========================================
     let isInteracting = false;
     let touchStartDist = 0;
     let touchStartRadius = 45;
     let previousTouchPos = { x: 0, y: 0 };
+    let isTwoFingerPan = false;
+    let previousPanCenter = { x: 0, y: 0 };
 
     function getTouchDistance(e) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -959,14 +966,24 @@
       return Math.sqrt(dx * dx + dy * dy);
     }
 
+    function getTouchCenter(e) {
+      return {
+        x: (e.touches[0].clientX + e.touches[1].clientX) * 0.5,
+        y: (e.touches[0].clientY + e.touches[1].clientY) * 0.5
+      };
+    }
+
     function onPointerDown(e) {
       if (e.target.closest('#ui-container') || e.target.closest('#mode-floating-btn')) return;
       initAudio();
 
       if (e.touches && e.touches.length === 2) {
-        // ピンチ操作開始
+        // ① 2本指タッチ操作（ズーム ＆ パン）
         touchStartDist = getTouchDistance(e);
         touchStartRadius = cameraRadius;
+        previousPanCenter = getTouchCenter(e);
+        isTwoFingerPan = true;
+        isInteracting = false;
         return;
       }
 
@@ -975,9 +992,9 @@
       previousTouchPos = { x: clientX, y: clientY };
 
       isInteracting = true;
+      isTwoFingerPan = false;
 
       if (!isCameraMode) {
-        // 粒子発生
         pointer.x = (clientX / window.innerWidth) * 2 - 1;
         pointer.y = -(clientY / window.innerHeight) * 2 + 1;
         
@@ -992,14 +1009,28 @@
     }
 
     function onPointerMove(e) {
-      if (e.touches && e.touches.length === 2) {
-        // ② ピンチイン・アウトによるズーム処理
+      if (e.touches && e.touches.length === 2 && isTwoFingerPan) {
+        // ピンチズーム
         const dist = getTouchDistance(e);
         if (touchStartDist > 0) {
           const factor = touchStartDist / dist;
           cameraRadius = touchStartRadius * factor;
-          updateCameraPosition();
         }
+
+        // ① 2本指スライドによるカメラ位置の平行移動（パン）
+        const currentCenter = getTouchCenter(e);
+        const deltaX = currentCenter.x - previousPanCenter.x;
+        const deltaY = currentCenter.y - previousPanCenter.y;
+
+        const panSpeed = 0.05 * (cameraRadius / 45);
+        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+        const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+
+        cameraTarget.add(right.multiplyScalar(-deltaX * panSpeed));
+        cameraTarget.add(up.multiplyScalar(deltaY * panSpeed));
+
+        previousPanCenter = currentCenter;
+        updateCameraPosition();
         return;
       }
 
@@ -1010,10 +1041,23 @@
       const deltaX = clientX - previousTouchPos.x;
       const deltaY = clientY - previousTouchPos.y;
 
-      if (isCameraMode) {
-        // ⑤ 1本指ドラッグで立体3D回転 (上下左右)
-        cameraTheta -= deltaX * 0.008;
-        cameraPhi -= deltaY * 0.008;
+      // ① PCキーボード/マウスでの平行移動判定 (Shiftキー または 右クリック)
+      const isShiftOrRightClick = e.shiftKey || e.button === 2;
+
+      if (isCameraMode || isShiftOrRightClick) {
+        if (isShiftOrRightClick) {
+          // PCパン操作
+          const panSpeed = 0.05 * (cameraRadius / 45);
+          const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+          const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+
+          cameraTarget.add(right.multiplyScalar(-deltaX * panSpeed));
+          cameraTarget.add(up.multiplyScalar(deltaY * panSpeed));
+        } else {
+          // 3D角度回転
+          cameraTheta -= deltaX * 0.008;
+          cameraPhi -= deltaY * 0.008;
+        }
         updateCameraPosition();
       } else {
         // 粒子連続発生
@@ -1038,16 +1082,19 @@
 
     function onPointerUp() {
       isInteracting = false;
+      isTwoFingerPan = false;
       touchStartDist = 0;
     }
 
-    // マウスホイールズーム
     window.addEventListener('wheel', (e) => {
       if (e.target.closest('#ui-container') || e.target.closest('#mode-floating-btn')) return;
       initAudio();
       cameraRadius += e.deltaY * 0.05;
       updateCameraPosition();
     }, { passive: true });
+
+    // コンテクストメニュー（右クリックメニュー）の抑止
+    window.addEventListener('contextmenu', (e) => e.preventDefault());
 
     window.addEventListener('touchstart', onPointerDown, { passive: false });
     window.addEventListener('touchmove', onPointerMove, { passive: false });
@@ -1079,7 +1126,7 @@
     });
 
     // ==========================================
-    // 5. 局所衝突 & 融合進化
+    // 5. ③ 局所衝突 & 融合進化
     // ==========================================
     function handleCollisionsAndFusion() {
       if (reactivityFactor <= 0.01) return;
@@ -1142,7 +1189,6 @@
       }
     }
 
-    // 初期カメラ位置設定
     updateCameraPosition();
 
     // ==========================================
@@ -1153,7 +1199,6 @@
 
       globalTime += 0.01;
 
-      // ⑦風矢印 & ⑨細密地形の更新
       update3DEnvironment();
 
       for (let i = 0; i < particles.length; i++) {
@@ -1166,6 +1211,7 @@
         const p = particles[i];
         const alive = p.update(particles);
 
+        // ② & ④ 分解して「一つ前の段階の粒子」に還元され跡地から新生態系がスタート
         if (p.decomposed) {
           const parentPos = p.mesh.position.clone();
           const parentVel = p.velocity.clone();
@@ -1176,15 +1222,24 @@
 
           playPokoSound(0.9 + prevType * 0.1, true, parentPos);
 
-          // 分解して2つに裂ける
-          spawnCluster(parentPos, 2, parentVel.negate().multiplyScalar(0.25), {
-            type: prevType,
-            radius: Math.max(0.28, p.radius / 1.15),
-            hue: p.hue,
-            attractionPower: Math.max(0.007, p.attractionPower / 1.2),
-            lifeBonus: Math.max(1.0, p.lifeBonus / 1.15),
-            fusionCooldown: 30
-          });
+          // 一つ前の段階の粒子（2〜3個）へ再分解
+          const spawnCount = prevType === 0 ? 3 : 2;
+          for (let k = 0; k < spawnCount; k++) {
+            const spreadVel = new THREE.Vector3(
+              (Math.random() - 0.5) * 0.3,
+              0.1 + Math.random() * 0.2,
+              (Math.random() - 0.5) * 0.3
+            ).add(parentVel.clone().multiplyScalar(0.2));
+
+            spawnCluster(parentPos, 1, spreadVel, {
+              type: prevType,
+              radius: Math.max(0.28, p.radius / 1.25),
+              hue: p.hue + (k * 0.03),
+              attractionPower: Math.max(0.007, p.attractionPower / 1.15),
+              lifeBonus: Math.max(1.0, p.lifeBonus / 1.1),
+              fusionCooldown: 40 // 再融合までのクールダウン時間
+            });
+          }
           continue;
         }
 
@@ -1202,3 +1257,4 @@
   </script>
 </body>
 </html>
+
