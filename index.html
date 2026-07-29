@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>UNERI Flow - 3D Environment & Multi-Cluster Life Loop</title>
+  <title>UNERI Flow - 3D Terrain & Vector Dynamics</title>
   <style>
     body {
       margin: 0;
@@ -15,18 +15,19 @@
       user-select: none;
     }
 
+    /* ① モード切替ボタンを右下に移動 */
     #mode-floating-btn {
       position: absolute;
-      top: 20px;
+      bottom: 20px;
       right: 20px;
       z-index: 100;
       background: rgba(10, 14, 24, 0.88);
       border: 1px solid rgba(0, 255, 210, 0.6);
       color: #00ffd2;
-      padding: 8px 16px;
-      border-radius: 20px;
+      padding: 10px 18px;
+      border-radius: 24px;
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       font-weight: bold;
       backdrop-filter: blur(10px);
       box-shadow: 0 0 15px rgba(0, 255, 210, 0.25);
@@ -45,8 +46,9 @@
     }
 
     #mode-floating-btn.active {
-      background: rgba(0, 255, 210, 0.25);
+      background: rgba(0, 255, 210, 0.3);
       color: #ffffff;
+      box-shadow: 0 0 25px rgba(0, 255, 210, 0.6);
     }
 
     #ui-container {
@@ -198,26 +200,6 @@
       padding-left: 14px;
     }
 
-    .shortcut-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.62rem;
-      color: #b0f0e0;
-    }
-
-    .shortcut-table td {
-      padding: 3px 0;
-    }
-
-    kbd {
-      background: rgba(0, 255, 210, 0.2);
-      border: 1px solid rgba(0, 255, 210, 0.4);
-      color: #ffffff;
-      padding: 1px 5px;
-      border-radius: 4px;
-      font-family: monospace;
-    }
-
     .control-group {
       margin-bottom: 10px;
     }
@@ -306,7 +288,8 @@
 </head>
 <body>
 
-  <button id="mode-floating-btn" title="視点操作モード（Spaceキー）">
+  <!-- ① 右下配置へ変更されたボタン -->
+  <button id="mode-floating-btn" title="操作モード切替 (Spaceキー)">
     <span id="mode-icon">✨</span>
     <span id="mode-text">粒子発生モード</span>
   </button>
@@ -317,12 +300,12 @@
     <div class="ui-header">
       <h1>UNERI Flow</h1>
       <div class="ui-header-actions">
-        <div class="icon-btn" id="reset-cam-btn" title="視点を最初に戻す (Rキー)">🏠</div>
+        <div class="icon-btn" id="reset-cam-btn" title="視点をリセット (R)">🏠</div>
         <div class="icon-btn" id="toggle-btn" title="メニューを折りたたむ">─</div>
       </div>
     </div>
     
-    <p class="concept-sub">衝突、進化、崩壊。<br>粒子の生態系を『持続』させる調和を見つけ出そう。</p>
+    <p class="concept-sub">地形を滑り、集い、形を変える。<br>流動的な生命とうねりのシミュレーション。</p>
 
     <div class="tab-container">
       <button class="tab-btn active" data-tab="tab-control">🎮 操作</button>
@@ -333,23 +316,12 @@
     <!-- タブ1: 操作説明 -->
     <div class="tab-content active" id="tab-control">
       <div class="guide-section">
-        <div class="guide-title">📱 タッチ / マウス操作方法</div>
+        <div class="guide-title">📱 タッチ / マウス操作</div>
         <ul class="guide-list">
-          <li><strong>粒子発生:</strong> 1本指ドラッグ / クリックドラッグ</li>
-          <li><strong>視点移動:</strong> 2本指ドラッグ（または視点操作モード）</li>
-          <li><strong>ズーム:</strong> ピンチイン・アウト / ホイール</li>
+          <li><strong>【粒子発生モード】</strong><br>1本指ドラッグ: 粒子を連続生成</li>
+          <li><strong>【視点操作モード】</strong><br>1本指ドラッグ: 3D角度回転 (上下左右)<br>2本指平行ドラッグ: 平行移動</li>
+          <li><strong>【共通】</strong><br>ピンチイン / アウト: ズーム移動</li>
         </ul>
-      </div>
-
-      <div class="guide-section">
-        <div class="guide-title">⌨️ PCキーボードショートカット</div>
-        <table class="shortcut-table">
-          <tr><td><kbd>Space</kbd></td><td>視点操作モード 切替</td></tr>
-          <tr><td><kbd>Shift</kbd> + ドラッグ</td><td>視点並行移動</td></tr>
-          <tr><td><kbd>R</kbd></td><td>視点リセット</td></tr>
-          <tr><td><kbd>+</kbd> / <kbd>-</kbd></td><td>ズームイン / アウト</td></tr>
-          <tr><td><kbd>C</kbd></td><td>全粒子リセット</td></tr>
-        </table>
       </div>
 
       <button class="action-btn" id="clear-particles-btn">🗑️ 全粒子をリセット (C)</button>
@@ -358,7 +330,7 @@
     <!-- タブ2: 生態系パラメーター -->
     <div class="tab-content" id="tab-eco">
       <div class="switch-group">
-        <span>画面端での反転 (跳ね返り)</span>
+        <span>境界（空間端）での反転</span>
         <label class="toggle-switch">
           <input type="checkbox" id="boundary-enable" checked>
           <span class="slider-round"></span>
@@ -366,35 +338,35 @@
       </div>
 
       <div class="control-group">
-        <label><span>孤独時の寿命の縮みやすさ</span><span id="exp-val">2.2</span></label>
+        <label><span>孤独時の寿命減衰率</span><span id="exp-val">2.2</span></label>
         <input type="range" id="exp-slider" min="1.0" max="3.5" step="0.1" value="2.2">
       </div>
 
       <div class="control-group">
-        <label><span>「ひとりぼっち」の判定基準</span><span id="thresh-val">0.0010</span></label>
+        <label><span>「ひとりぼっち」の判定閾値</span><span id="thresh-val">0.0010</span></label>
         <input type="range" id="thresh-slider" min="0.0000" max="0.0050" step="0.0002" value="0.0010">
       </div>
 
       <div class="control-group">
-        <label><span>衝突で合体・進化する確率</span><span id="react-val">1.0</span></label>
+        <label><span>融合・進化の確率</span><span id="react-val">1.0</span></label>
         <input type="range" id="react-slider" min="0.0" max="3.0" step="0.1" value="1.0">
       </div>
 
       <div class="control-group">
-        <label><span>進化粒子の寿命（分解時間）</span><span id="decay-val">1.0</span></label>
+        <label><span>進化粒子の崩壊時間</span><span id="decay-val">1.0</span></label>
         <input type="range" id="decay-slider" min="0.1" max="3.0" step="0.1" value="1.0">
       </div>
 
       <div class="control-group">
-        <label><span>進化粒子の最大サイズ上限</span><span id="size-val">1.20</span></label>
-        <input type="range" id="size-slider" min="0.5" max="2.5" step="0.05" value="1.20">
+        <label><span>進化粒子のサイズ上限</span><span id="size-val">1.50</span></label>
+        <input type="range" id="size-slider" min="0.5" max="3.0" step="0.05" value="1.50">
       </div>
     </div>
 
     <!-- タブ3: 音響設定 -->
     <div class="tab-content" id="tab-audio">
       <div class="switch-group">
-        <span>マスター音声 (Sound ON/OFF)</span>
+        <span>マスター音声 (ON/OFF)</span>
         <label class="toggle-switch">
           <input type="checkbox" id="audio-enable" checked>
           <span class="slider-round"></span>
@@ -402,17 +374,17 @@
       </div>
 
       <div class="control-group">
-        <label><span>粒子発生音 (Spawn Volume)</span><span id="vol-spawn-val">1.5</span></label>
+        <label><span>発生音量 (Spawn Vol)</span><span id="vol-spawn-val">1.5</span></label>
         <input type="range" id="vol-spawn-slider" min="0.0" max="4.0" step="0.1" value="1.5">
       </div>
 
       <div class="control-group">
-        <label><span>粒子移動音 (Motion Volume)</span><span id="vol-motion-val">2.0</span></label>
+        <label><span>移動音量 (Motion Vol)</span><span id="vol-motion-val">2.0</span></label>
         <input type="range" id="vol-motion-slider" min="0.0" max="5.0" step="0.1" value="2.0">
       </div>
 
       <div class="control-group">
-        <label><span>粒子融合/分解音 (Fusion Volume)</span><span id="vol-fusion-val">1.5</span></label>
+        <label><span>融合音量 (Fusion Vol)</span><span id="vol-fusion-val">1.5</span></label>
         <input type="range" id="vol-fusion-slider" min="0.0" max="4.0" step="0.1" value="1.5">
       </div>
     </div>
@@ -421,14 +393,14 @@
 
   <script>
     // ==========================================
-    // 0. UI・制御変数
+    // 0. グローバル変数 & UI連動
     // ==========================================
     let globalTime = 0;
     let expFactor = 2.2;
     let thresholdValue = 0.0010;
     let reactivityFactor = 1.0; 
     let decayTimeFactor = 1.0;  
-    let sizeLimitThreshold = 1.20; 
+    let sizeLimitThreshold = 1.50; 
 
     let isBoundaryBounceEnabled = true;
 
@@ -438,16 +410,6 @@
     let volFusion = 1.5;
 
     let isCameraMode = false; 
-    let isShiftPressed = false; 
-
-    let isCameraTransforming = false; 
-    let camTransformTimeout = null;
-
-    function triggerCameraTransform() {
-      isCameraTransforming = true;
-      if (camTransformTimeout) clearTimeout(camTransformTimeout);
-      camTransformTimeout = setTimeout(() => { isCameraTransforming = false; }, 350); 
-    }
 
     const uiContainer = document.getElementById('ui-container');
     const toggleBtn = document.getElementById('toggle-btn');
@@ -487,7 +449,7 @@
       isCameraMode = enabled;
       modeFloatingBtn.classList.toggle('active', isCameraMode);
       if (isCameraMode) {
-        modeIcon.textContent = '🔍';
+        modeIcon.textContent = '🎥';
         modeText.textContent = '視点操作モード';
       } else {
         modeIcon.textContent = '✨';
@@ -505,21 +467,11 @@
       if (e.code === 'Space') {
         e.preventDefault();
         setCameraMode(!isCameraMode);
-      } else if (e.key === 'Shift') {
-        isShiftPressed = true;
       } else if (e.key === 'r' || e.key === 'R') {
         resetCameraPos();
-      } else if (e.key === '+' || e.key === '=') {
-        zoomCamera(-2);
-      } else if (e.key === '-' || e.key === '_') {
-        zoomCamera(2);
       } else if (e.key === 'c' || e.key === 'C') {
         clearAllParticles();
       }
-    });
-
-    window.addEventListener('keyup', (e) => {
-      if (e.key === 'Shift') isShiftPressed = false;
     });
 
     const bindSlider = (sliderId, displayId, callback) => {
@@ -562,7 +514,7 @@
     bindSlider('vol-fusion-slider', 'vol-fusion-val', v => volFusion = v);
 
     // ==========================================
-    // 1. Web Audio API サラウンド音響
+    // 1. Web Audio API 立体音響
     // ==========================================
     let audioCtx = null;
     let masterFilter = null;
@@ -657,26 +609,36 @@
     }
 
     // ==========================================
-    // 2. Three.js セットアップ & 復元ライティング (③の修正)
+    // 2. Three.js セットアップ & ⑤ 軌道3Dカメラ
     // ==========================================
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x04060a, 0.0005); 
+    scene.fog = new THREE.FogExp2(0x04060a, 0.0008); 
 
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 50000);
     
-    let targetZoom = 30;
-    let targetCamPos = new THREE.Vector3(0, 0, targetZoom);
-    camera.position.set(0, 0, targetZoom);
+    // カメラの軌道コントロールパラメータ (球面座標系)
+    let cameraTarget = new THREE.Vector3(0, 0, 0);
+    let cameraRadius = 45;
+    let cameraTheta = 0;            // 左右回転角 (方位角)
+    let cameraPhi = Math.PI * 0.35; // 上下回転角 (仰角)
 
-    function resetCameraPos() {
-      targetZoom = 30;
-      targetCamPos.set(0, 0, targetZoom);
-      triggerCameraTransform();
+    function updateCameraPosition() {
+      // ②&⑤ ピンチインアウト・3D角度回転の確実な追従計算
+      cameraRadius = Math.max(8, Math.min(cameraRadius, 150));
+      cameraPhi = Math.max(0.05, Math.min(Math.PI * 0.48, cameraPhi));
+
+      camera.position.x = cameraTarget.x + cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta);
+      camera.position.y = cameraTarget.y + cameraRadius * Math.cos(cameraPhi);
+      camera.position.z = cameraTarget.z + cameraRadius * Math.sin(cameraPhi) * Math.cos(cameraTheta);
+      camera.lookAt(cameraTarget);
     }
 
-    function zoomCamera(delta) {
-      targetZoom = Math.max(5, targetZoom + delta);
-      triggerCameraTransform();
+    function resetCameraPos() {
+      cameraTarget.set(0, 0, 0);
+      cameraRadius = 45;
+      cameraTheta = 0;
+      cameraPhi = Math.PI * 0.35;
+      updateCameraPosition();
     }
 
     resetCamBtn.addEventListener('click', (e) => {
@@ -689,126 +651,110 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     document.body.appendChild(renderer.domElement);
 
-    // 【③ 修正】元の深い陰影とクリアな輝きを生むライティング構成
-    const ambientLight = new THREE.AmbientLight(0x223344, 0.8);
+    // ライティング
+    const ambientLight = new THREE.AmbientLight(0x223344, 0.9);
     scene.add(ambientLight);
 
-    const mainLight = new THREE.DirectionalLight(0x00ffd2, 1.3);
-    mainLight.position.set(20, 35, 25);
+    const mainLight = new THREE.DirectionalLight(0x00ffd2, 1.4);
+    mainLight.position.set(30, 50, 40);
     scene.add(mainLight);
 
     const subLight = new THREE.DirectionalLight(0xff4080, 0.7);
-    subLight.position.set(-25, -20, -10);
+    subLight.position.set(-30, -20, -20);
     scene.add(subLight);
 
     const raycaster = new THREE.Raycaster();
-    const mousePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     const pointer = new THREE.Vector2();
-    const intersectPoint = new THREE.Vector3();
 
     // ==========================================
-    // 2.5 高視認性3Dノイズフィールド＆立体流速 (①＆②の修正)
+    // 2.5 ⑨ 細密3D地形 & ⑦ 風のベクトル矢印場
     // ==========================================
-    // 1. 高コントラスト＆高視認性3D地形メッシュ（山・谷・地平線）
-    const GRID_X = 50;
-    const GRID_Y = 50;
-    const fieldPlaneGeo = new THREE.PlaneGeometry(320, 320, GRID_X, GRID_Y);
-    
-    // 発光感を高めたアクアブルーのマテリアル
-    const fieldMat = new THREE.MeshBasicMaterial({
-      color: 0x00ffd2,
+    // ⑨ メッシュ細密化 (80 x 80)
+    const GRID_SIZE = 80;
+    const TERRAIN_WIDTH = 240;
+    const fieldPlaneGeo = new THREE.PlaneGeometry(TERRAIN_WIDTH, TERRAIN_WIDTH, GRID_SIZE, GRID_SIZE);
+    fieldPlaneGeo.rotateX(-Math.PI / 2); // 床面に水平配置
+
+    const fieldMat = new THREE.MeshPhongMaterial({
+      color: 0x004440,
+      emissive: 0x001a18,
+      specular: 0x00ffd2,
       wireframe: true,
       transparent: true,
-      opacity: 0.65, // ① 劇的に見えやすく高コントラスト化
-      blending: THREE.AdditiveBlending
+      opacity: 0.55,
+      shininess: 30
     });
     
     const fieldMesh = new THREE.Mesh(fieldPlaneGeo, fieldMat);
-    fieldMesh.rotation.x = -Math.PI * 0.32; // ② 奥に地平線ができる傾き
-    fieldMesh.position.z = -18;
+    fieldMesh.position.set(0, -10, 0);
     scene.add(fieldMesh);
 
-    // 2. 立体的な「風」の流れを表現する3D流線群 (② 3次元の風表現)
-    const WIND_COUNT = 40;
-    const windGroup = new THREE.Group();
-    const windData = [];
-
-    for (let w = 0; w < WIND_COUNT; w++) {
-      const pGeo = new THREE.BufferGeometry();
-      const pCount = 12;
-      const positions = new Float32Array(pCount * 3);
-      pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-      const pMat = new THREE.LineBasicMaterial({
-        color: 0x7ef1d3,
-        transparent: true,
-        opacity: 0.7,
-        blending: THREE.AdditiveBlending
-      });
-
-      const line = new THREE.Line(pGeo, pMat);
-      windGroup.add(line);
-
-      windData.push({
-        line: line,
-        geo: pGeo,
-        x: (Math.random() - 0.5) * 200,
-        y: (Math.random() - 0.5) * 150,
-        z: (Math.random() - 0.5) * 80 - 10,
-        speed: 0.6 + Math.random() * 0.8
-      });
+    // ノイズ地形の高度関数
+    function getTerrainHeight(x, z, time) {
+      const wave1 = Math.sin(x * 0.035 + time * 0.8) * Math.cos(z * 0.035);
+      const wave2 = Math.cos(x * 0.018 - time * 0.5) * Math.sin(z * 0.022) * 2.5;
+      return (wave1 * 4.5 + wave2) - 10; 
     }
-    scene.add(windGroup);
 
-    function get3DNoiseVector(x, y, z, time) {
-      // 3次元でうねる風と地形の高低差ベクトル
-      const waveX = Math.sin(x * 0.02 + time * 0.5) * Math.cos(z * 0.02);
-      const waveY = Math.cos(y * 0.02 + time * 0.4) * Math.sin(x * 0.02);
-      const waveZ = Math.sin(z * 0.03 + time * 0.6) * Math.cos(y * 0.02);
-
-      const mountain = Math.sin(x * 0.015) * Math.cos(y * 0.015) * 18.0; // 山脈・谷の高低差
-
-      return {
-        flow: new THREE.Vector3(waveX * 0.01, waveY * 0.01, waveZ * 0.008),
-        mountainZ: mountain
-      };
+    // 風場の3Dベクトル取得 (⑦ 風の方向・速度)
+    function getWindVector(x, y, z, time) {
+      const windX = Math.sin(x * 0.02 + time * 1.2) * Math.cos(z * 0.02) * 0.08;
+      const windY = Math.cos(y * 0.03 + time * 0.8) * 0.02;
+      const windZ = Math.cos(x * 0.02) * Math.sin(z * 0.02 + time * 1.0) * 0.08;
+      return new THREE.Vector3(windX, windY, windZ);
     }
+
+    // ⑦ 風の流れを見える化する発光ベクトル矢印群
+    const arrowGroup = new THREE.Group();
+    const ARROW_COUNT_X = 12;
+    const ARROW_COUNT_Z = 12;
+    const arrows = [];
+
+    const arrowGeo = new THREE.ConeGeometry(0.2, 0.7, 5);
+    arrowGeo.rotateX(Math.PI / 2); // ポインティング方向調整
+    const arrowMat = new THREE.MeshBasicMaterial({
+      color: 0x00ffd2,
+      transparent: true,
+      opacity: 0.45,
+      wireframe: true
+    });
+
+    for (let ix = -ARROW_COUNT_X/2; ix <= ARROW_COUNT_X/2; ix++) {
+      for (let iz = -ARROW_COUNT_Z/2; iz <= ARROW_COUNT_Z/2; iz++) {
+        const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+        const posX = ix * (TERRAIN_WIDTH / ARROW_COUNT_X) * 0.7;
+        const posZ = iz * (TERRAIN_WIDTH / ARROW_COUNT_Z) * 0.7;
+        arrow.position.set(posX, 0, posZ);
+        arrowGroup.add(arrow);
+        arrows.push(arrow);
+      }
+    }
+    scene.add(arrowGroup);
 
     function update3DEnvironment() {
-      // 地形メッシュの波打ちと高低差更新
+      // ⑨ 地形高度のアニメーション更新
       const posAttr = fieldPlaneGeo.attributes.position;
       for (let i = 0; i < posAttr.count; i++) {
         const x = posAttr.getX(i);
-        const y = posAttr.getY(i);
-        const noise = get3DNoiseVector(x + targetCamPos.x, y + targetCamPos.y, 0, globalTime);
-        const dynamicZ = noise.mountainZ + Math.sin(x * 0.04 + globalTime * 2.0) * Math.cos(y * 0.04) * 8.0;
-        posAttr.setZ(i, dynamicZ);
+        const z = posAttr.getZ(i);
+        const h = getTerrainHeight(x, z, globalTime);
+        posAttr.setY(i, h + 10); // 地形ローカルY高度
       }
       posAttr.needsUpdate = true;
-      fieldMesh.position.x = targetCamPos.x;
-      fieldMesh.position.y = targetCamPos.y + 15;
+      fieldPlaneGeo.computeVertexNormals();
 
-      // 3D風の流線アニメーション（手前・奥へ通り抜けるうねり）
-      windData.forEach(w => {
-        const pos = w.geo.attributes.position.array;
-        let currX = w.x + Math.sin(globalTime * w.speed) * 30;
-        let currY = w.y + Math.cos(globalTime * w.speed * 0.7) * 20;
-        let currZ = w.z;
-
-        for (let p = 0; p < 12; p++) {
-          pos[p * 3] = currX + p * 2.0;
-          pos[p * 3 + 1] = currY + Math.sin(currX * 0.04 + globalTime * 2.5 + p * 0.3) * 6.0;
-          pos[p * 3 + 2] = currZ + Math.cos(currY * 0.04 + globalTime * 2.0 + p * 0.3) * 6.0;
-          currX += 1.8;
-        }
-        w.geo.attributes.position.needsUpdate = true;
+      // ⑦ 風ベクトル矢印の回転と高度連動
+      arrows.forEach(arrow => {
+        const h = getTerrainHeight(arrow.position.x, arrow.position.z, globalTime);
+        arrow.position.y = h + 2.5;
+        const wind = getWindVector(arrow.position.x, arrow.position.y, arrow.position.z, globalTime);
+        const targetPos = arrow.position.clone().add(wind.clone().multiplyScalar(10));
+        arrow.lookAt(targetPos);
       });
-      windGroup.position.x = targetCamPos.x;
-      windGroup.position.y = targetCamPos.y;
     }
 
     // ==========================================
-    // 3. 粒子クラス（③の美質感マテリアル復元）
+    // 3. 粒子クラス (⑥地形判定 ＆ ⑧重力・もちもち変形)
     // ==========================================
     const MAX_PARTICLES = 1000;
     let particles = [];
@@ -827,7 +773,6 @@
 
     class ChibiParticle {
       constructor(x, y, z, initialVel, options = {}) {
-        // 【③ 修正】光と反射を受ける Phong マテリアル
         this.material = new THREE.MeshPhongMaterial({
           color: 0x00ffd2,
           emissive: 0x022018,
@@ -841,7 +786,7 @@
         this.mesh.position.set(x, y, z);
         
         this.type = options.type !== undefined ? options.type : 0;
-        this.radius = Math.min(options.radius !== undefined ? options.radius : 0.28, 4.5);
+        this.radius = Math.min(options.radius !== undefined ? options.radius : 0.28, 5.0);
         this.hue = options.hue !== undefined ? options.hue : (0.40 + Math.random() * 0.18);
         this.attractionPower = options.attractionPower !== undefined ? Math.min(options.attractionPower, 0.06) : 0.008;
         this.lifeBonus = options.lifeBonus !== undefined ? Math.min(options.lifeBonus, 3.5) : 1.0;
@@ -864,18 +809,17 @@
         this.baseFreq = (80 + Math.random() * 120) * Math.pow(0.9, Math.min(this.type, 8));
       }
 
-      applyFlockingRule(neighbors, bounds) {
+      applyFlockingRule(neighbors) {
         const cohesion = new THREE.Vector3();
         const separation = new THREE.Vector3();
         const alignment = new THREE.Vector3();
         let count = 0;
 
-        // 【④ 修正】ローカルのみの集束計算で複数箇所に個別の凝集体を作る
         for (let i = 0; i < neighbors.length; i++) {
           const other = neighbors[i];
           const dist = this.mesh.position.distanceTo(other.mesh.position);
 
-          if (dist > 0 && dist < 6.0) {
+          if (dist > 0 && dist < 7.0) {
             cohesion.add(other.mesh.position);
             alignment.add(other.velocity);
 
@@ -892,33 +836,73 @@
           cohesion.divideScalar(count);
           const cohesionForce = new THREE.Vector3().subVectors(cohesion, this.mesh.position).multiplyScalar(this.attractionPower);
           this.velocity.add(cohesionForce);
-          alignment.divideScalar(count).multiplyScalar(0.025);
+          alignment.divideScalar(count).multiplyScalar(0.02);
           this.velocity.add(alignment);
           separation.multiplyScalar(0.025);
           this.velocity.add(separation);
         }
 
-        // 3D環境風を粒子に与える
-        const env = get3DNoiseVector(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z, globalTime);
-        this.velocity.add(env.flow);
+        // ⑦ 3D風の影響
+        const wind = getWindVector(this.mesh.position.x, this.mesh.position.y, this.mesh.position.z, globalTime);
+        // ⑧ 重い粒子ほど風の影響を受けにくい
+        const windWeight = Math.max(0.15, 1.0 - (this.radius - 0.28) * 0.25);
+        this.velocity.add(wind.multiplyScalar(windWeight));
 
-        if (isBoundaryBounceEnabled && !isCameraTransforming) {
-          const minX = targetCamPos.x - bounds.x;
-          const maxX = targetCamPos.x + bounds.x;
-          const minY = targetCamPos.y - bounds.y;
-          const maxY = targetCamPos.y + bounds.y;
+        // ③&④ 強化された空間端（跳ね返り）判定
+        if (isBoundaryBounceEnabled) {
+          const boundX = TERRAIN_WIDTH * 0.42;
+          const boundZ = TERRAIN_WIDTH * 0.42;
+          const boundYMax = 35;
+          const boundYMin = -15;
 
-          if (this.mesh.position.x > maxX) this.velocity.x -= 0.03;
-          if (this.mesh.position.x < minX) this.velocity.x += 0.03;
-          if (this.mesh.position.y > maxY) this.velocity.y -= 0.03;
-          if (this.mesh.position.y < minY) this.velocity.y += 0.03;
+          if (this.mesh.position.x > boundX) { this.velocity.x -= 0.05; }
+          if (this.mesh.position.x < -boundX) { this.velocity.x += 0.05; }
+          if (this.mesh.position.z > boundZ) { this.velocity.z -= 0.05; }
+          if (this.mesh.position.z < -boundZ) { this.velocity.z += 0.05; }
+          if (this.mesh.position.y > boundYMax) { this.velocity.y -= 0.05; }
         }
       }
 
       update(allParticles) {
-        this.velocity.multiplyScalar(0.97);
+        // ⑧ 大型粒子の質量（重力）計算
+        const mass = Math.pow(this.radius / 0.28, 1.5);
+        const gravity = 0.008 * Math.min(mass, 8.0);
+        this.velocity.y -= gravity; // 重力で下に落ちる
+
+        this.velocity.multiplyScalar(0.96);
         this.mesh.position.add(this.velocity);
         this.age += 1;
+
+        // ⑥ 地形メッシュとの当たり判定 & ⑧ 傾斜の滑り落ち
+        const terrainY = getTerrainHeight(this.mesh.position.x, this.mesh.position.z, globalTime);
+        const surfaceY = terrainY + this.radius;
+
+        if (this.mesh.position.y <= surfaceY) {
+          // 地形より下にめり込まない
+          this.mesh.position.y = surfaceY;
+          if (this.velocity.y < 0) this.velocity.y *= -0.2; // 接地時の反発
+
+          // 地形の傾斜（法線勾配）を取得し、谷へ向かって滑り落ちる
+          const delta = 0.5;
+          const hL = getTerrainHeight(this.mesh.position.x - delta, this.mesh.position.z, globalTime);
+          const hR = getTerrainHeight(this.mesh.position.x + delta, this.mesh.position.z, globalTime);
+          const hD = getTerrainHeight(this.mesh.position.x, this.mesh.position.z - delta, globalTime);
+          const hU = getTerrainHeight(this.mesh.position.x, this.mesh.position.z + delta, globalTime);
+
+          const slopeX = (hL - hR) * 0.02;
+          const slopeZ = (hD - hU) * 0.02;
+          this.velocity.x += slopeX;
+          this.velocity.z += slopeZ;
+
+          // ⑧ もちもち形状変化 (接地すると横に広がり縦に押しつぶされる)
+          const squish = Math.min(1.4, 1.0 + (mass * 0.05));
+          const baseScale = this.radius / 0.28;
+          this.mesh.scale.set(baseScale * squish, baseScale / (squish * 0.85), baseScale * squish);
+        } else {
+          // 空中では元の丸い球体に戻る
+          const baseScale = this.radius / 0.28;
+          this.mesh.scale.set(baseScale, baseScale, baseScale);
+        }
 
         if (this.fusionCooldown > 0) this.fusionCooldown--;
 
@@ -935,6 +919,7 @@
           return true; 
         }
 
+        // 孤独度の判定
         let proximitySupport = 0;
         for (let i = 0; i < allParticles.length; i++) {
           const other = allParticles[i];
@@ -961,81 +946,116 @@
     }
 
     // ==========================================
-    // 4. 操作制御（ピンチ・ドラッグ）
+    // 4. ②&⑤ タッチ・ピンチ・回転操作
     // ==========================================
     let isInteracting = false;
-    let isPanDragging = false;
-    let lastPos = new THREE.Vector3();
-    let dragVelocity = new THREE.Vector3();
-    let initialPinchDistance = null;
+    let touchStartDist = 0;
+    let touchStartRadius = 45;
+    let previousTouchPos = { x: 0, y: 0 };
 
-    function getPointerPos(e) {
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      pointer.x = (clientX / window.innerWidth) * 2 - 1;
-      pointer.y = -(clientY / window.innerHeight) * 2 + 1;
-
-      mousePlane.constant = -targetCamPos.z + targetZoom;
-      raycaster.setFromCamera(pointer, camera);
-      raycaster.ray.intersectPlane(mousePlane, intersectPoint);
+    function getTouchDistance(e) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
     }
 
     function onPointerDown(e) {
       if (e.target.closest('#ui-container') || e.target.closest('#mode-floating-btn')) return;
       initAudio();
 
-      if (isCameraMode || isShiftPressed) {
-        isPanDragging = true;
-        isInteracting = false;
-        getPointerPos(e);
-        lastPos.copy(intersectPoint);
-        triggerCameraTransform();
+      if (e.touches && e.touches.length === 2) {
+        // ピンチ操作開始
+        touchStartDist = getTouchDistance(e);
+        touchStartRadius = cameraRadius;
         return;
       }
 
-      isInteracting = true;
-      isPanDragging = false;
-      getPointerPos(e);
-      lastPos.copy(intersectPoint);
-      dragVelocity.set(0, 0, 0);
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      previousTouchPos = { x: clientX, y: clientY };
 
-      spawnCluster(intersectPoint, 4, new THREE.Vector3());
+      isInteracting = true;
+
+      if (!isCameraMode) {
+        // 粒子発生
+        pointer.x = (clientX / window.innerWidth) * 2 - 1;
+        pointer.y = -(clientY / window.innerHeight) * 2 + 1;
+        
+        raycaster.setFromCamera(pointer, camera);
+        const intersectPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const spawnPos = new THREE.Vector3();
+        raycaster.ray.intersectPlane(intersectPlane, spawnPos);
+        
+        if (!spawnPos) spawnPos.set(0, 5, 0);
+        spawnCluster(spawnPos, 4, new THREE.Vector3());
+      }
     }
 
     function onPointerMove(e) {
-      if (isPanDragging && (isCameraMode || isShiftPressed)) {
-        triggerCameraTransform();
-        getPointerPos(e);
-        targetCamPos.x -= (intersectPoint.x - lastPos.x) * 0.6;
-        targetCamPos.y -= (intersectPoint.y - lastPos.y) * 0.6;
+      if (e.touches && e.touches.length === 2) {
+        // ② ピンチイン・アウトによるズーム処理
+        const dist = getTouchDistance(e);
+        if (touchStartDist > 0) {
+          const factor = touchStartDist / dist;
+          cameraRadius = touchStartRadius * factor;
+          updateCameraPosition();
+        }
         return;
       }
 
       if (!isInteracting) return;
-      getPointerPos(e);
 
-      dragVelocity.subVectors(intersectPoint, lastPos);
-      if (dragVelocity.lengthSq() > 0.04) {
-        const count = Math.min(Math.floor(dragVelocity.length() * 4) + 1, 5);
-        const impulse = dragVelocity.clone().multiplyScalar(0.15);
-        if (impulse.length() > 0.2) impulse.normalize().multiplyScalar(0.2);
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const deltaX = clientX - previousTouchPos.x;
+      const deltaY = clientY - previousTouchPos.y;
 
-        spawnCluster(intersectPoint, count, impulse);
-        lastPos.copy(intersectPoint);
+      if (isCameraMode) {
+        // ⑤ 1本指ドラッグで立体3D回転 (上下左右)
+        cameraTheta -= deltaX * 0.008;
+        cameraPhi -= deltaY * 0.008;
+        updateCameraPosition();
+      } else {
+        // 粒子連続発生
+        if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+          pointer.x = (clientX / window.innerWidth) * 2 - 1;
+          pointer.y = -(clientY / window.innerHeight) * 2 + 1;
+          
+          raycaster.setFromCamera(pointer, camera);
+          const intersectPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+          const spawnPos = new THREE.Vector3();
+          raycaster.ray.intersectPlane(intersectPlane, spawnPos);
+
+          if (spawnPos) {
+            const impulse = new THREE.Vector3(deltaX * 0.01, -deltaY * 0.01, 0);
+            spawnCluster(spawnPos, 2, impulse);
+          }
+        }
       }
+
+      previousTouchPos = { x: clientX, y: clientY };
     }
 
     function onPointerUp() {
       isInteracting = false;
-      isPanDragging = false;
+      touchStartDist = 0;
     }
 
+    // マウスホイールズーム
     window.addEventListener('wheel', (e) => {
       if (e.target.closest('#ui-container') || e.target.closest('#mode-floating-btn')) return;
       initAudio();
-      triggerCameraTransform();
-      targetZoom = Math.max(5, targetZoom + e.deltaY * 0.00075 * targetZoom);
+      cameraRadius += e.deltaY * 0.05;
+      updateCameraPosition();
     }, { passive: true });
+
+    window.addEventListener('touchstart', onPointerDown, { passive: false });
+    window.addEventListener('touchmove', onPointerMove, { passive: false });
+    window.addEventListener('touchend', onPointerUp);
+
+    window.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
 
     function spawnCluster(pos, count, impulse, options = {}) {
       for (let i = 0; i < count; i++) {
@@ -1044,17 +1064,13 @@
           oldest.destroy();
         }
 
-        const offset = new THREE.Vector3((Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 0.8);
+        const offset = new THREE.Vector3((Math.random() - 0.5) * 1.5, Math.random() * 1.0, (Math.random() - 0.5) * 1.5);
         const p = new ChibiParticle(pos.x + offset.x, pos.y + offset.y, pos.z + offset.z, impulse, options);
         scene.add(p.mesh);
         particles.push(p);
       }
       playPokoSound(0.85 + Math.min(impulse.length() * 1.2, 0.7), false, pos);
     }
-
-    window.addEventListener('pointerdown', onPointerDown);
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
 
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
@@ -1063,7 +1079,7 @@
     });
 
     // ==========================================
-    // 5. 【④ 修正】複数個所の完全独立・無制限粒子凝集システム
+    // 5. 局所衝突 & 融合進化
     // ==========================================
     function handleCollisionsAndFusion() {
       if (reactivityFactor <= 0.01) return;
@@ -1076,7 +1092,6 @@
           const p2 = particles[j];
           if (!p2 || p2.life <= 0 || p2.fusionCooldown > 0) continue;
 
-          // 場所に一切関わらず局所の接触距離のみで判定
           const dist = p1.mesh.position.distanceTo(p2.mesh.position);
           if (dist < (p1.radius + p2.radius) * 1.05) {
             p1.life = 0;
@@ -1088,10 +1103,9 @@
 
             playPokoSound(1.2 + Math.min(newType, 10) * 0.1, true, fusionPos);
 
-            // 画面のどこであっても独立して新たな凝集体が生成・巨大化
             spawnCluster(fusionPos, 1, fusionVel, {
               type: newType,
-              radius: Math.min(Math.max(p1.radius, p2.radius) * 1.18, 4.2),
+              radius: Math.min(Math.max(p1.radius, p2.radius) * 1.20, 5.0),
               hue: ((p1.type >= p2.type ? p1.hue : p2.hue) + 0.05),
               attractionPower: Math.min(Math.max(p1.attractionPower, p2.attractionPower) * 1.3, 0.06),
               lifeBonus: Math.min(Math.max(p1.lifeBonus, p2.lifeBonus) * 1.25, 4.0),
@@ -1128,6 +1142,9 @@
       }
     }
 
+    // 初期カメラ位置設定
+    updateCameraPosition();
+
     // ==========================================
     // 6. メインアニメーションループ
     // ==========================================
@@ -1135,21 +1152,14 @@
       requestAnimationFrame(animate);
 
       globalTime += 0.01;
-      targetCamPos.z = targetZoom;
-      camera.position.lerp(targetCamPos, 0.055);
 
-      // ①＆② 3D環境・風・地形の更新
+      // ⑦風矢印 & ⑨細密地形の更新
       update3DEnvironment();
 
-      const vFOV = THREE.MathUtils.degToRad(camera.fov);
-      const visibleHeight = 2 * Math.tan(vFOV / 2) * camera.position.z;
-      const bounds = { x: (visibleHeight * camera.aspect / 2) * 0.85, y: (visibleHeight / 2) * 0.85 };
-
       for (let i = 0; i < particles.length; i++) {
-        particles[i].applyFlockingRule(particles, bounds);
+        particles[i].applyFlockingRule(particles);
       }
 
-      // ④ 独立した複数凝集体の衝突処理
       handleCollisionsAndFusion();
 
       for (let i = particles.length - 1; i >= 0; i--) {
@@ -1166,9 +1176,10 @@
 
           playPokoSound(0.9 + prevType * 0.1, true, parentPos);
 
+          // 分解して2つに裂ける
           spawnCluster(parentPos, 2, parentVel.negate().multiplyScalar(0.25), {
             type: prevType,
-            radius: Math.max(0.28, p.radius / 1.12),
+            radius: Math.max(0.28, p.radius / 1.15),
             hue: p.hue,
             attractionPower: Math.max(0.007, p.attractionPower / 1.2),
             lifeBonus: Math.max(1.0, p.lifeBonus / 1.15),
