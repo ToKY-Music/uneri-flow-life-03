@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>UNERI Flow - Infinite Particle Scale</title>
+  <title>UNERI Flow - Dynamic Self-Tuning Ecosystem</title>
   <style>
     body {
       margin: 0;
@@ -45,7 +45,7 @@
       box-shadow: 0 0 25px rgba(0, 255, 210, 0.6);
     }
 
-    /* ① リアルタイム粒子数カウンター（画面左下） */
+    /* ① リアルタイム粒子数 ＆ 自動調整インジケーター */
     #particle-counter {
       position: absolute;
       bottom: 20px;
@@ -56,7 +56,7 @@
       color: #00ffd2;
       padding: 8px 14px;
       border-radius: 20px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: bold;
       letter-spacing: 0.05em;
       backdrop-filter: blur(8px);
@@ -65,7 +65,7 @@
       pointer-events: none;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
 
     #particle-counter .dot {
@@ -77,10 +77,31 @@
       animation: pulse 1.5s infinite;
     }
 
+    #auto-tuning-tag {
+      font-size: 0.68rem;
+      color: #ff00ab;
+      background: rgba(255, 0, 171, 0.15);
+      border: 1px solid rgba(255, 0, 171, 0.5);
+      padding: 2px 6px;
+      border-radius: 10px;
+      display: none;
+    }
+
+    #auto-tuning-tag.active {
+      display: inline-block;
+      animation: pulse-pink 1.2s infinite;
+    }
+
     @keyframes pulse {
       0% { transform: scale(0.9); opacity: 0.7; }
       50% { transform: scale(1.3); opacity: 1; }
       100% { transform: scale(0.9); opacity: 0.7; }
+    }
+
+    @keyframes pulse-pink {
+      0% { opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { opacity: 0.6; }
     }
 
     #ui-container {
@@ -96,7 +117,7 @@
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(0, 255, 210, 0.3);
-      width: 290px;
+      width: 295px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
       transition: width 0.25s ease, height 0.25s ease, padding 0.25s ease, border-radius 0.25s ease;
       box-sizing: border-box;
@@ -203,7 +224,7 @@
 
     .tab-content {
       display: none;
-      max-height: 48vh;
+      max-height: 50vh;
       overflow-y: auto;
     }
 
@@ -305,6 +326,13 @@
       background-color: #ffffff;
     }
 
+    .pink-switch input:checked + .slider-round {
+      background-color: rgba(255, 0, 171, 0.5);
+    }
+    .pink-switch input:checked + .slider-round:before {
+      background-color: #ff80df;
+    }
+
     .action-btn {
       width: 100%;
       padding: 8px;
@@ -317,15 +345,21 @@
       font-size: 0.7rem;
       font-weight: bold;
     }
+
+    .highlight-label {
+      color: #ff80df !important;
+      font-weight: bold;
+    }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-  <!-- ① 画面左下の粒子数カウンター -->
+  <!-- ① 画面左下のリアルタイム粒子数 ＆ 動的調整インジケーター -->
   <div id="particle-counter">
     <span class="dot"></span>
-    <span>粒子数: <span id="particle-count-num">0</span></span>
+    <span>粒子数: <span id="particle-count-num">0</span> / <span id="particle-max-num">1500</span></span>
+    <span id="auto-tuning-tag">Auto-Tuning</span>
   </div>
 
   <button id="mode-floating-btn" title="操作モード切替 (Spaceキー)">
@@ -369,6 +403,22 @@
 
     <!-- タブ2: 生態系パラメーター -->
     <div class="tab-content" id="tab-eco">
+      
+      <!-- ② パラメーター動的変化モードのスイッチ -->
+      <div class="switch-group">
+        <span class="highlight-label">⚡️ パラメーター動的変化モード</span>
+        <label class="toggle-switch pink-switch">
+          <input type="checkbox" id="auto-tuning-enable">
+          <span class="slider-round"></span>
+        </label>
+      </div>
+
+      <!-- ① 表示可能（計算）最大粒子数スライダー -->
+      <div class="control-group">
+        <label><span>最大粒子数制限 (Max Capacity)</span><span id="max-limit-val">1500</span></label>
+        <input type="range" id="max-limit-slider" min="100" max="3000" step="50" value="1500">
+      </div>
+
       <div class="switch-group">
         <span>境界（空間端）での反転</span>
         <label class="toggle-switch">
@@ -436,6 +486,9 @@
     // 0. UI・制御変数
     // ==========================================
     let globalTime = 0;
+    let maxParticlesLimit = 1500; // ① 最大表示可能粒子数
+    let isAutoTuningEnabled = false; // ② 動的変化モード
+
     let expFactor = 2.2;
     let thresholdValue = 0.0010;
     let reactivityFactor = 1.0; 
@@ -451,7 +504,7 @@
 
     let isCameraMode = false; 
 
-    // 高速化用再利用ベクトル
+    // 高速化用ワークベクトル
     const VEC_COHESION = new THREE.Vector3();
     const VEC_SEPARATION = new THREE.Vector3();
     const VEC_ALIGNMENT = new THREE.Vector3();
@@ -466,7 +519,10 @@
     const modeFloatingBtn = document.getElementById('mode-floating-btn');
     const modeIcon = document.getElementById('mode-icon');
     const modeText = document.getElementById('mode-text');
+    
     const particleCountNumDisplay = document.getElementById('particle-count-num');
+    const particleMaxNumDisplay = document.getElementById('particle-max-num');
+    const autoTuningTag = document.getElementById('auto-tuning-tag');
 
     function toggleUI(e) {
       if (e) e.stopPropagation();
@@ -537,6 +593,19 @@
       isBoundaryBounceEnabled = e.target.checked;
     });
 
+    // ① 最大粒子数制限スライダーのバインド
+    document.getElementById('max-limit-slider').addEventListener('input', (e) => {
+      maxParticlesLimit = parseInt(e.target.value);
+      document.getElementById('max-limit-val').textContent = maxParticlesLimit;
+      particleMaxNumDisplay.textContent = maxParticlesLimit;
+    });
+
+    // ② パラメーター動的変化モードのバインド
+    document.getElementById('auto-tuning-enable').addEventListener('change', (e) => {
+      isAutoTuningEnabled = e.target.checked;
+      autoTuningTag.classList.toggle('active', isAutoTuningEnabled);
+    });
+
     bindSlider('exp-slider', 'exp-val', v => expFactor = v);
     document.getElementById('thresh-slider').addEventListener('input', (e) => {
       thresholdValue = parseFloat(e.target.value);
@@ -561,6 +630,50 @@
     bindSlider('vol-spawn-slider', 'vol-spawn-val', v => volSpawn = v);
     bindSlider('vol-motion-slider', 'vol-motion-val', v => volMotion = v);
     bindSlider('vol-fusion-slider', 'vol-fusion-val', v => volFusion = v);
+
+    // ==========================================
+    // ② パラメーター自律動的チューニング処理
+    // ==========================================
+    function updateDynamicAutoTuning() {
+      if (!isAutoTuningEnabled) return;
+
+      const currentCount = particles.length;
+      const density = currentCount / maxParticlesLimit; // 0.0 ~ 1.0 (混雑率)
+
+      let totalSpeed = 0;
+      let largeCount = 0;
+      for (let i = 0; i < currentCount; i++) {
+        totalSpeed += particles[i].velocity.length();
+        if (particles[i].type > 0) largeCount++;
+      }
+      const avgSpeed = currentCount > 0 ? (totalSpeed / currentCount) : 0;
+      const largeRatio = currentCount > 0 ? (largeCount / currentCount) : 0;
+
+      // 1. 密度が上昇すると寿命減衰率が強まる (生態系の過密制御)
+      expFactor = 1.8 + density * 1.4;
+      document.getElementById('exp-slider').value = expFactor;
+      document.getElementById('exp-val').textContent = expFactor.toFixed(1);
+
+      // 2. 平均運動速度に応じて崩壊時間を動的変化
+      decayTimeFactor = Math.max(0.3, 1.8 - avgSpeed * 2.5);
+      document.getElementById('decay-slider').value = decayTimeFactor;
+      document.getElementById('decay-val').textContent = decayTimeFactor.toFixed(1);
+
+      // 3. 進化粒子の割合が増えると「ひとりぼっち判定」を動的拡大 (ちび粒子の生き残りやすさ補助)
+      thresholdValue = Math.max(0.0002, 0.0025 - largeRatio * 0.003);
+      document.getElementById('thresh-slider').value = thresholdValue;
+      document.getElementById('thresh-val').textContent = thresholdValue.toFixed(4);
+
+      // 4. 混雑率に応じて融合確率を調整 (自己制御)
+      reactivityFactor = Math.max(0.2, 1.8 - density * 1.2);
+      document.getElementById('react-slider').value = reactivityFactor;
+      document.getElementById('react-val').textContent = reactivityFactor.toFixed(1);
+
+      // 5. 平均速度に合わせて巨大化サイズ上限を変動
+      sizeLimitThreshold = 1.0 + Math.sin(globalTime * 0.5) * 0.4 + (avgSpeed * 1.5);
+      document.getElementById('size-slider').value = sizeLimitThreshold;
+      document.getElementById('size-val').textContent = sizeLimitThreshold.toFixed(2);
+    }
 
     // ==========================================
     // 1. Web Audio API (軽量化ボイスプール)
@@ -712,7 +825,7 @@
     const pointer = new THREE.Vector2();
 
     // ==========================================
-    // 2.5 3D地形 & 風のベクトル矢印場 (沈み込み無し・純粋地形)
+    // 2.5 3D地形 & 風のベクトル矢印場
     // ==========================================
     const GRID_SIZE = 40;
     const TERRAIN_WIDTH = 240;
@@ -794,7 +907,7 @@
     }
 
     // ==========================================
-    // 3. 超高速 空間分割グリッド (Spatial Hash Grid)
+    // 3. 空間分割グリッド (Spatial Hash Grid)
     // ==========================================
     const GRID_CELL_SIZE = 8.0;
     const spatialGrid = new Map();
@@ -844,7 +957,7 @@
     }
 
     // ==========================================
-    // 3.5 粒子クラス (軽量化マテリアル・上限なし)
+    // 3.5 粒子クラス
     // ==========================================
     let particles = [];
     const tempNeighborBuffer = [];
@@ -1172,8 +1285,15 @@
     window.addEventListener('mousemove', onPointerMove);
     window.addEventListener('mouseup', onPointerUp);
 
+    // ★ ① 最大粒子数制限（maxParticlesLimit）による安全制御付きの粒子生成
     function spawnCluster(pos, count, impulse, options = {}) {
       for (let i = 0; i < count; i++) {
+        // 容量上限を超過している場合、最も古い粒子を安全に1つ削除して枠を空ける
+        if (particles.length >= maxParticlesLimit) {
+          const oldest = particles.shift();
+          if (oldest) oldest.destroy();
+        }
+
         const offset = VEC_TEMP.set((Math.random() - 0.5) * 1.5, Math.random() * 1.0, (Math.random() - 0.5) * 1.5);
         const p = new ChibiParticle(pos.x + offset.x, pos.y + offset.y, pos.z + offset.z, impulse, options);
         scene.add(p.mesh);
@@ -1266,6 +1386,9 @@
 
       globalTime += 0.01;
 
+      // ② パラメーター自律動的チューニングの更新
+      updateDynamicAutoTuning();
+
       updateSpatialGrid();
 
       update3DEnvironment();
@@ -1319,7 +1442,7 @@
         }
       }
 
-      // ① リアルタイム粒子数表示の更新
+      // リアルタイム粒子数 ＆ 上限の表示更新
       particleCountNumDisplay.textContent = particles.length;
 
       updateAudioVoices();
