@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>UNERI Flow - Self-Limiting Cluster Ecosystem</title>
+  <title>UNERI Flow - Dynamic Self-Tuning Ecosystem</title>
   <style>
     body {
       margin: 0;
@@ -15,7 +15,6 @@
       user-select: none;
     }
 
-    /* 右下 floating ボタン */
     #mode-floating-btn {
       position: absolute;
       bottom: 16px;
@@ -46,7 +45,6 @@
       box-shadow: 0 0 25px rgba(0, 255, 210, 0.6);
     }
 
-    /* ① 左下粒子数カウンター（小型画面での右下ボタンとの被りを防止） */
     #particle-counter {
       position: absolute;
       bottom: 16px;
@@ -110,7 +108,6 @@
       100% { opacity: 0.6; }
     }
 
-    /* 折りたたみメニュー */
     #ui-container {
       position: absolute;
       top: 16px;
@@ -362,7 +359,6 @@
 </head>
 <body>
 
-  <!-- 左下粒子数カウンター -->
   <div id="particle-counter">
     <span class="dot"></span>
     <span>粒子数: <span id="particle-count-num">0</span>/<span id="particle-max-num">1500</span></span>
@@ -411,7 +407,6 @@
     <!-- タブ2: 生態系パラメーター -->
     <div class="tab-content" id="tab-eco">
       
-      <!-- 動的変化モードスイッチ -->
       <div class="switch-group">
         <span class="highlight-label">⚡️ パラメーター動的変化モード</span>
         <label class="toggle-switch pink-switch">
@@ -420,19 +415,22 @@
         </label>
       </div>
 
-      <!-- 最大粒子数制限スライダー -->
       <div class="control-group">
         <label><span>最大粒子数制限 (Max Capacity)</span><span id="max-limit-val">1500</span></label>
         <input type="range" id="max-limit-slider" min="100" max="3000" step="50" value="1500">
       </div>
 
-      <!-- 融合粒子の分解確率スライダー -->
+      <!-- ② 各粒子の「重さ（重力影響度）」スライダー（最小値 0.0） -->
+      <div class="control-group">
+        <label><span>重力・重さの影響 (Gravity Weight)</span><span id="gravity-val">1.00</span></label>
+        <input type="range" id="gravity-slider" min="0.00" max="3.00" step="0.05" value="1.00">
+      </div>
+
       <div class="control-group">
         <label><span>融合粒子の分解発生確率</span><span id="decomp-prob-val">0.60</span></label>
         <input type="range" id="decomp-prob-slider" min="0.10" max="1.00" step="0.05" value="0.60">
       </div>
 
-      <!-- 分解時に生じる粒子数スライダー -->
       <div class="control-group">
         <label><span>分解時に生じる粒子数</span><span id="decomp-count-val">2</span></label>
         <input type="range" id="decomp-count-slider" min="1" max="4" step="1" value="2">
@@ -508,9 +506,11 @@
     let maxParticlesLimit = 1500; 
     let isAutoTuningEnabled = false; 
 
-    // 分解確率 ＆ 分解数
-    let decomposeChanceFactor = 0.60; // 60%
-    let decomposeSpawnCount = 2;       // 2個
+    // ② 重さパラメータ（デフォルト 1.00、最小 0.00）
+    let globalGravityWeight = 1.00;
+
+    let decomposeChanceFactor = 0.60;
+    let decomposeSpawnCount = 2;       
 
     let expFactor = 2.2;
     let thresholdValue = 0.0010;
@@ -622,6 +622,12 @@
       particleMaxNumDisplay.textContent = maxParticlesLimit;
     });
 
+    // ② 重さスライダーのバインド
+    document.getElementById('gravity-slider').addEventListener('input', (e) => {
+      globalGravityWeight = parseFloat(e.target.value);
+      document.getElementById('gravity-val').textContent = globalGravityWeight.toFixed(2);
+    });
+
     document.getElementById('decomp-prob-slider').addEventListener('input', (e) => {
       decomposeChanceFactor = parseFloat(e.target.value);
       document.getElementById('decomp-prob-val').textContent = decomposeChanceFactor.toFixed(2);
@@ -663,12 +669,20 @@
     bindSlider('vol-fusion-slider', 'vol-fusion-val', v => volFusion = v);
 
     // ==========================================
-    // パラメーター自律動的チューニング処理
+    // ③ パラメーター自律動的チューニング処理 (振幅・変容ダイナミクスの激化)
     // ==========================================
     function updateDynamicAutoTuning() {
       if (!isAutoTuningEnabled) return;
 
       const currentCount = particles.length;
+
+      // ③ 最大粒子数制限（Capacity）も波のように大きく動的振動
+      const targetMaxCapacity = Math.floor(1200 + Math.sin(globalTime * 0.15) * 800 + Math.cos(globalTime * 0.3) * 500);
+      maxParticlesLimit = Math.max(300, Math.min(3000, targetMaxCapacity));
+      document.getElementById('max-limit-slider').value = maxParticlesLimit;
+      document.getElementById('max-limit-val').textContent = maxParticlesLimit;
+      particleMaxNumDisplay.textContent = maxParticlesLimit;
+
       const density = currentCount / maxParticlesLimit; 
 
       let totalSpeed = 0;
@@ -687,15 +701,20 @@
       const avgSpeed = currentCount > 0 ? (totalSpeed / currentCount) : 0;
       const largeRatio = currentCount > 0 ? (largeCount / currentCount) : 0;
 
-      // 巨大個体が偏った際、分解確率を引き上げ、分解時間を早めて拡散を促す
-      if (maxParticleRadiusInScene > 2.2 || largeRatio > 0.12) {
-        decayTimeFactor = Math.max(0.3, 0.9 - (largeRatio * 1.5));
-        decomposeChanceFactor = Math.min(1.0, 0.70 + (largeRatio * 0.5));
-        decomposeSpawnCount = maxParticleRadiusInScene > 3.2 ? 3 : 2;
+      // ②&③ 重力（重さ）の動的変化：無重力(0.0) 〜 高重力(2.5)へダイナミックに変化
+      globalGravityWeight = Math.max(0.0, 1.2 + Math.sin(globalTime * 0.25) * 1.3 - (largeRatio * 0.8));
+      document.getElementById('gravity-slider').value = globalGravityWeight;
+      document.getElementById('gravity-val').textContent = globalGravityWeight.toFixed(2);
+
+      // ③ より激しい分解確率・崩壊時間の変形ウェーブ
+      if (maxParticleRadiusInScene > 2.0 || largeRatio > 0.10) {
+        decayTimeFactor = Math.max(0.2, 0.7 - (largeRatio * 2.0));
+        decomposeChanceFactor = Math.min(1.0, 0.75 + (largeRatio * 0.6));
+        decomposeSpawnCount = maxParticleRadiusInScene > 3.0 ? 3 : 2;
       } else {
-        decayTimeFactor = Math.max(0.4, 1.4 - avgSpeed * 1.5);
-        decomposeChanceFactor = 0.60;
-        decomposeSpawnCount = 2;
+        decayTimeFactor = Math.max(0.3, 1.8 + Math.sin(globalTime * 0.5) * 1.0 - avgSpeed * 1.2);
+        decomposeChanceFactor = Math.max(0.2, 0.60 + Math.cos(globalTime * 0.4) * 0.3);
+        decomposeSpawnCount = (Math.sin(globalTime * 0.2) > 0.5) ? 3 : 2;
       }
 
       document.getElementById('decomp-prob-slider').value = decomposeChanceFactor;
@@ -704,22 +723,22 @@
       document.getElementById('decomp-count-slider').value = decomposeSpawnCount;
       document.getElementById('decomp-count-val').textContent = decomposeSpawnCount;
 
-      expFactor = 1.8 + density * 1.2;
+      expFactor = Math.max(1.0, 1.6 + density * 1.8 + Math.sin(globalTime * 0.3) * 0.6);
       document.getElementById('exp-slider').value = expFactor;
       document.getElementById('exp-val').textContent = expFactor.toFixed(1);
 
       document.getElementById('decay-slider').value = decayTimeFactor;
       document.getElementById('decay-val').textContent = decayTimeFactor.toFixed(1);
 
-      thresholdValue = Math.max(0.0002, 0.0025 - largeRatio * 0.003);
+      thresholdValue = Math.max(0.0001, 0.0030 - largeRatio * 0.004 + Math.sin(globalTime * 0.2) * 0.001);
       document.getElementById('thresh-slider').value = thresholdValue;
       document.getElementById('thresh-val').textContent = thresholdValue.toFixed(4);
 
-      reactivityFactor = Math.max(0.2, 1.8 - density * 1.2);
+      reactivityFactor = Math.max(0.1, 2.0 - density * 1.5 + Math.cos(globalTime * 0.35) * 0.5);
       document.getElementById('react-slider').value = reactivityFactor;
       document.getElementById('react-val').textContent = reactivityFactor.toFixed(1);
 
-      sizeLimitThreshold = 1.2 + Math.sin(globalTime * 0.5) * 0.3 + (avgSpeed * 1.2);
+      sizeLimitThreshold = Math.max(0.6, 1.4 + Math.sin(globalTime * 0.6) * 0.8);
       document.getElementById('size-slider').value = sizeLimitThreshold;
       document.getElementById('size-val').textContent = sizeLimitThreshold.toFixed(2);
     }
@@ -1006,7 +1025,7 @@
     }
 
     // ==========================================
-    // 3.5 粒子クラス (自己制限型「引力 ⇄ 斥力」反転ロジック搭載)
+    // 3.5 粒子クラス (① 時間差熟成・反発 ＆ ② 動的重力対応)
     // ==========================================
     let particles = [];
     const tempNeighborBuffer = [];
@@ -1078,7 +1097,6 @@
             VEC_COHESION.add(other.mesh.position);
             VEC_ALIGNMENT.add(other.velocity);
 
-            // 近接時の離散力
             if (dist < (1.2 * (this.radius + other.radius) / 0.56)) {
               VEC_PUSH.subVectors(this.mesh.position, other.mesh.position);
               VEC_PUSH.normalize().divideScalar(Math.max(dist, 0.1));
@@ -1091,17 +1109,21 @@
         if (count > 0) {
           VEC_COHESION.divideScalar(count);
           
-          // ★ 自己制限型動的「引力 ⇄ 斥力」計算
-          // 通常時（小さな粒子）: 基本引力 (0.008)
-          // 巨大化時（例: radius > 1.8）: サイズ増加とともに引力が減少し、やがてマイナス（斥力）に反転！
+          // ★ ① 時間差（熟成）反発モデル：
+          // 巨大個体（radius > 1.8）になってから「一定の生存時間（例: age > 120フレーム）」が経過したときのみ反発（斥力）が発動！
           const baseAttr = 0.008;
-          const sizeRatio = this.radius / 0.28; // 1.0 〜 18.0
-          
-          // 閾値サイズ（radius ≈ 1.8以上）を超えると引力が反発力へ変化する二次関数モデル
-          let effectiveAttraction = baseAttr * (1.0 - Math.pow((this.radius / 1.8), 2.2));
-          
-          // 反発（斥力）の下限（強力な押し出し力）を制御
-          effectiveAttraction = Math.max(-0.025, effectiveAttraction);
+          let effectiveAttraction = baseAttr;
+
+          if (this.radius > 1.8) {
+            const maturationDelay = 120; // 熟成時間（この間は巨大凝集体として引き合い・安定）
+            if (this.age > maturationDelay) {
+              // 熟成時間を過ぎると徐々に強力な反発（斥力）へと遷移
+              const maturityProgress = Math.min(1.0, (this.age - maturationDelay) / 100.0);
+              const repulsionPower = Math.pow(this.radius / 1.8, 2.0) * maturityProgress;
+              effectiveAttraction = baseAttr * (1.0 - repulsionPower * 2.5);
+              effectiveAttraction = Math.max(-0.03, effectiveAttraction);
+            }
+          }
 
           VEC_TEMP.subVectors(VEC_COHESION, this.mesh.position).multiplyScalar(effectiveAttraction);
           this.velocity.add(VEC_TEMP);
@@ -1109,8 +1131,7 @@
           VEC_ALIGNMENT.divideScalar(count).multiplyScalar(0.02);
           this.velocity.add(VEC_ALIGNMENT);
 
-          // 巨大個体自体の分離（押し出し）力を強化
-          const separationPower = (this.radius > 1.8) ? 0.05 : 0.025;
+          const separationPower = (this.radius > 1.8 && this.age > 120) ? 0.06 : 0.025;
           VEC_SEPARATION.multiplyScalar(separationPower);
           this.velocity.add(VEC_SEPARATION);
         }
@@ -1133,8 +1154,9 @@
       }
 
       update(neighbors) {
+        // ② 重さ（重力）スライダー/動的制御値（globalGravityWeight）を物理に反映
         const mass = Math.pow(this.radius / 0.28, 1.5);
-        const gravity = 0.008 * Math.min(mass, 8.0);
+        const gravity = 0.008 * Math.min(mass, 8.0) * globalGravityWeight;
         this.velocity.y -= gravity;
 
         this.velocity.multiplyScalar(0.96);
@@ -1154,13 +1176,13 @@
           const hD = getTerrainHeight(this.mesh.position.x, this.mesh.position.z - delta, globalTime);
           const hU = getTerrainHeight(this.mesh.position.x, this.mesh.position.z + delta, globalTime);
 
-          const slopeX = (hL - hR) * 0.02;
-          const slopeZ = (hD - hU) * 0.02;
+          const slopeX = (hL - hR) * 0.02 * globalGravityWeight;
+          const slopeZ = (hD - hU) * 0.02 * globalGravityWeight;
           this.velocity.x += slopeX;
           this.velocity.z += slopeZ;
 
           const breath = 1.0 + Math.sin(globalTime * 3.0 + this.age * 0.05) * 0.08;
-          const squish = Math.min(1.3, (1.0 + (mass * 0.04))) * breath;
+          const squish = Math.min(1.3, (1.0 + (mass * 0.04 * globalGravityWeight))) * breath;
           const baseScale = this.radius / 0.28;
           this.mesh.scale.set(baseScale * squish, baseScale / (squish * 0.85), baseScale * squish);
         } else {
