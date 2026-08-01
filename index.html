@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>UNERI Flow - Dynamic Self-Tuning Ecosystem</title>
+  <title>UNERI Flow - Progressive Attraction Ecosystem</title>
   <style>
     body {
       margin: 0;
@@ -334,6 +334,7 @@
       background-color: rgba(255, 0, 171, 0.5);
     }
     .pink-switch input:checked + .slider-round:before {
+      transform: translateX(17px);
       background-color: #ff80df;
     }
 
@@ -397,7 +398,7 @@
           <li><strong>【粒子発生モード】</strong><br>1本指ドラッグ: 粒子を連続生成</li>
           <li><strong>【視点操作モード】</strong><br>1本指ドラッグ: 3D角度回転<br>2本指スライド: 平行移動 (パン)</li>
           <li><strong>【PC操作】</strong><br>Shift + ドラッグ または 右ドラッグ: 平行移動</li>
-          <li><strong>【共通】</strong><br>ピンチ / ホイール: ズーム移動</li>
+          <li><strong>【共通】</strong><br>ピンチ / ホイール: ズーム移動（無制限ズーム対応）</li>
         </ul>
       </div>
 
@@ -420,24 +421,23 @@
         <input type="range" id="max-limit-slider" min="100" max="3000" step="50" value="1500">
       </div>
 
-      <!-- ② 各粒子の「重さ（重力影響度）」スライダー（最小値 0.0） -->
       <div class="control-group">
-        <label><span>重力・重さの影響 (Gravity Weight)</span><span id="gravity-val">1.00</span></label>
-        <input type="range" id="gravity-slider" min="0.00" max="3.00" step="0.05" value="1.00">
+        <label><span>重力・重さの影響 (Gravity Weight)</span><span id="gravity-val">0.00</span></label>
+        <input type="range" id="gravity-slider" min="0.00" max="3.00" step="0.05" value="0.00">
       </div>
 
       <div class="control-group">
-        <label><span>融合粒子の分解発生確率</span><span id="decomp-prob-val">0.60</span></label>
-        <input type="range" id="decomp-prob-slider" min="0.10" max="1.00" step="0.05" value="0.60">
+        <label><span>融合粒子の分解発生確率</span><span id="decomp-prob-val">1.00</span></label>
+        <input type="range" id="decomp-prob-slider" min="0.10" max="1.00" step="0.05" value="1.00">
       </div>
 
       <div class="control-group">
-        <label><span>分解時に生じる粒子数</span><span id="decomp-count-val">2</span></label>
-        <input type="range" id="decomp-count-slider" min="1" max="4" step="1" value="2">
+        <label><span>分解時に生じる粒子数</span><span id="decomp-count-val">4</span></label>
+        <input type="range" id="decomp-count-slider" min="1" max="10" step="1" value="4">
       </div>
 
       <div class="switch-group">
-        <span>境界（空間端）での反転</span>
+        <span>トーラス空間環状化</span>
         <label class="toggle-switch">
           <input type="checkbox" id="boundary-enable" checked>
           <span class="slider-round"></span>
@@ -445,28 +445,28 @@
       </div>
 
       <div class="control-group">
-        <label><span>孤独時の寿命減衰率</span><span id="exp-val">2.2</span></label>
-        <input type="range" id="exp-slider" min="1.0" max="3.5" step="0.1" value="2.2">
+        <label><span>孤独時の寿命減衰率</span><span id="exp-val">1.0</span></label>
+        <input type="range" id="exp-slider" min="0.5" max="3.5" step="0.1" value="1.0">
       </div>
 
       <div class="control-group">
-        <label><span>「ひとりぼっち」の判定閾値</span><span id="thresh-val">0.0010</span></label>
-        <input type="range" id="thresh-slider" min="0.0000" max="0.0050" step="0.0002" value="0.0010">
+        <label><span>「ひとりぼっち」の判定閾値</span><span id="thresh-val">0.0050</span></label>
+        <input type="range" id="thresh-slider" min="0.0000" max="0.0200" step="0.0005" value="0.0050">
       </div>
 
       <div class="control-group">
-        <label><span>融合・進化の確率</span><span id="react-val">1.0</span></label>
-        <input type="range" id="react-slider" min="0.0" max="3.0" step="0.1" value="1.0">
+        <label><span>融合・進化の確率</span><span id="react-val">5.0</span></label>
+        <input type="range" id="react-slider" min="0.0" max="10.0" step="0.5" value="5.0">
       </div>
 
       <div class="control-group">
-        <label><span>進化粒子の崩壊時間</span><span id="decay-val">1.0</span></label>
-        <input type="range" id="decay-slider" min="0.1" max="3.0" step="0.1" value="1.0">
+        <label><span>進化粒子の崩壊時間</span><span id="decay-val">3.0</span></label>
+        <input type="range" id="decay-slider" min="0.5" max="10.0" step="0.5" value="3.0">
       </div>
 
       <div class="control-group">
-        <label><span>進化粒子のサイズ上限</span><span id="size-val">1.50</span></label>
-        <input type="range" id="size-slider" min="0.5" max="3.0" step="0.05" value="1.50">
+        <label><span>進化粒子のサイズ上限</span><span id="size-val">5.00</span></label>
+        <input type="range" id="size-slider" min="1.0" max="10.0" step="0.5" value="5.00">
       </div>
     </div>
 
@@ -504,21 +504,20 @@
     // ==========================================
     let globalTime = 0;
     let maxParticlesLimit = 1500; 
+
     let isAutoTuningEnabled = false; 
+    let globalGravityWeight = 0.00;
 
-    // ② 重さパラメータ（デフォルト 1.00、最小 0.00）
-    let globalGravityWeight = 1.00;
+    let decomposeChanceFactor = 1.00;
+    let decomposeSpawnCount = 4;       
 
-    let decomposeChanceFactor = 0.60;
-    let decomposeSpawnCount = 2;       
+    let expFactor = 1.0;
+    let thresholdValue = 0.0050;
+    let reactivityFactor = 5.0; 
+    let decayTimeFactor = 3.0;  
+    let sizeLimitThreshold = 5.00; 
 
-    let expFactor = 2.2;
-    let thresholdValue = 0.0010;
-    let reactivityFactor = 1.0; 
-    let decayTimeFactor = 1.0;  
-    let sizeLimitThreshold = 1.50; 
-
-    let isBoundaryBounceEnabled = true;
+    let isBoundaryToroidalEnabled = true;
 
     let isAudioEnabled = true;
     let volSpawn = 1.5;
@@ -527,7 +526,6 @@
 
     let isCameraMode = false; 
 
-    // 高速化用ワークベクトル
     const VEC_COHESION = new THREE.Vector3();
     const VEC_SEPARATION = new THREE.Vector3();
     const VEC_ALIGNMENT = new THREE.Vector3();
@@ -607,13 +605,13 @@
       const display = document.getElementById(displayId);
       slider.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
-        display.textContent = val.toFixed(slider.step && slider.step.includes('.') ? slider.step.split('.')[1].length : 1);
+        display.textContent = val.toFixed(slider.step && slider.step.includes('.') ? slider.step.split('.')[1].length : 2);
         callback(val);
       });
     };
 
     document.getElementById('boundary-enable').addEventListener('change', (e) => {
-      isBoundaryBounceEnabled = e.target.checked;
+      isBoundaryToroidalEnabled = e.target.checked;
     });
 
     document.getElementById('max-limit-slider').addEventListener('input', (e) => {
@@ -622,7 +620,6 @@
       particleMaxNumDisplay.textContent = maxParticlesLimit;
     });
 
-    // ② 重さスライダーのバインド
     document.getElementById('gravity-slider').addEventListener('input', (e) => {
       globalGravityWeight = parseFloat(e.target.value);
       document.getElementById('gravity-val').textContent = globalGravityWeight.toFixed(2);
@@ -651,10 +648,7 @@
 
     bindSlider('react-slider', 'react-val', v => reactivityFactor = v);
     bindSlider('decay-slider', 'decay-val', v => decayTimeFactor = v);
-    document.getElementById('size-slider').addEventListener('input', (e) => {
-      sizeLimitThreshold = parseFloat(e.target.value);
-      document.getElementById('size-val').textContent = sizeLimitThreshold.toFixed(2);
-    });
+    bindSlider('size-slider', 'size-val', v => sizeLimitThreshold = v);
 
     document.getElementById('audio-enable').addEventListener('change', (e) => {
       isAudioEnabled = e.target.checked;
@@ -668,23 +662,10 @@
     bindSlider('vol-motion-slider', 'vol-motion-val', v => volMotion = v);
     bindSlider('vol-fusion-slider', 'vol-fusion-val', v => volFusion = v);
 
-    // ==========================================
-    // ③ パラメーター自律動的チューニング処理 (振幅・変容ダイナミクスの激化)
-    // ==========================================
     function updateDynamicAutoTuning() {
       if (!isAutoTuningEnabled) return;
-
       const currentCount = particles.length;
-
-      // ③ 最大粒子数制限（Capacity）も波のように大きく動的振動
-      const targetMaxCapacity = Math.floor(1200 + Math.sin(globalTime * 0.15) * 800 + Math.cos(globalTime * 0.3) * 500);
-      maxParticlesLimit = Math.max(300, Math.min(3000, targetMaxCapacity));
-      document.getElementById('max-limit-slider').value = maxParticlesLimit;
-      document.getElementById('max-limit-val').textContent = maxParticlesLimit;
-      particleMaxNumDisplay.textContent = maxParticlesLimit;
-
       const density = currentCount / maxParticlesLimit; 
-
       let totalSpeed = 0;
       let largeCount = 0;
       let maxParticleRadiusInScene = 0.28;
@@ -701,46 +682,9 @@
       const avgSpeed = currentCount > 0 ? (totalSpeed / currentCount) : 0;
       const largeRatio = currentCount > 0 ? (largeCount / currentCount) : 0;
 
-      // ②&③ 重力（重さ）の動的変化：無重力(0.0) 〜 高重力(2.5)へダイナミックに変化
       globalGravityWeight = Math.max(0.0, 1.2 + Math.sin(globalTime * 0.25) * 1.3 - (largeRatio * 0.8));
       document.getElementById('gravity-slider').value = globalGravityWeight;
       document.getElementById('gravity-val').textContent = globalGravityWeight.toFixed(2);
-
-      // ③ より激しい分解確率・崩壊時間の変形ウェーブ
-      if (maxParticleRadiusInScene > 2.0 || largeRatio > 0.10) {
-        decayTimeFactor = Math.max(0.2, 0.7 - (largeRatio * 2.0));
-        decomposeChanceFactor = Math.min(1.0, 0.75 + (largeRatio * 0.6));
-        decomposeSpawnCount = maxParticleRadiusInScene > 3.0 ? 3 : 2;
-      } else {
-        decayTimeFactor = Math.max(0.3, 1.8 + Math.sin(globalTime * 0.5) * 1.0 - avgSpeed * 1.2);
-        decomposeChanceFactor = Math.max(0.2, 0.60 + Math.cos(globalTime * 0.4) * 0.3);
-        decomposeSpawnCount = (Math.sin(globalTime * 0.2) > 0.5) ? 3 : 2;
-      }
-
-      document.getElementById('decomp-prob-slider').value = decomposeChanceFactor;
-      document.getElementById('decomp-prob-val').textContent = decomposeChanceFactor.toFixed(2);
-
-      document.getElementById('decomp-count-slider').value = decomposeSpawnCount;
-      document.getElementById('decomp-count-val').textContent = decomposeSpawnCount;
-
-      expFactor = Math.max(1.0, 1.6 + density * 1.8 + Math.sin(globalTime * 0.3) * 0.6);
-      document.getElementById('exp-slider').value = expFactor;
-      document.getElementById('exp-val').textContent = expFactor.toFixed(1);
-
-      document.getElementById('decay-slider').value = decayTimeFactor;
-      document.getElementById('decay-val').textContent = decayTimeFactor.toFixed(1);
-
-      thresholdValue = Math.max(0.0001, 0.0030 - largeRatio * 0.004 + Math.sin(globalTime * 0.2) * 0.001);
-      document.getElementById('thresh-slider').value = thresholdValue;
-      document.getElementById('thresh-val').textContent = thresholdValue.toFixed(4);
-
-      reactivityFactor = Math.max(0.1, 2.0 - density * 1.5 + Math.cos(globalTime * 0.35) * 0.5);
-      document.getElementById('react-slider').value = reactivityFactor;
-      document.getElementById('react-val').textContent = reactivityFactor.toFixed(1);
-
-      sizeLimitThreshold = Math.max(0.6, 1.4 + Math.sin(globalTime * 0.6) * 0.8);
-      document.getElementById('size-slider').value = sizeLimitThreshold;
-      document.getElementById('size-val').textContent = sizeLimitThreshold.toFixed(2);
     }
 
     // ==========================================
@@ -843,16 +787,16 @@
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x04060a, 0.0008); 
 
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 50000);
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500000);
     
     let cameraTarget = new THREE.Vector3(0, 0, 0);
-    let cameraRadius = 45;
+    let cameraRadius = 55; 
     let cameraTheta = 0;            
     let cameraPhi = Math.PI * 0.35; 
 
     function updateCameraPosition() {
-      cameraRadius = Math.max(8, Math.min(cameraRadius, 150));
-      cameraPhi = Math.max(0.05, Math.min(Math.PI * 0.48, cameraPhi));
+      cameraRadius = Math.max(3, cameraRadius);
+      cameraPhi = Math.max(0.01, Math.min(Math.PI * 0.49, cameraPhi));
 
       camera.position.x = cameraTarget.x + cameraRadius * Math.sin(cameraPhi) * Math.sin(cameraTheta);
       camera.position.y = cameraTarget.y + cameraRadius * Math.cos(cameraPhi);
@@ -862,7 +806,7 @@
 
     function resetCameraPos() {
       cameraTarget.set(0, 0, 0);
-      cameraRadius = 45;
+      cameraRadius = 55;
       cameraTheta = 0;
       cameraPhi = Math.PI * 0.35;
       updateCameraPosition();
@@ -895,8 +839,8 @@
     // ==========================================
     // 2.5 3D地形 & 風のベクトル矢印場
     // ==========================================
-    const GRID_SIZE = 40;
-    const TERRAIN_WIDTH = 240;
+    const GRID_SIZE = 50;
+    const TERRAIN_WIDTH = 400; 
     const fieldPlaneGeo = new THREE.PlaneGeometry(TERRAIN_WIDTH, TERRAIN_WIDTH, GRID_SIZE, GRID_SIZE);
     fieldPlaneGeo.rotateX(-Math.PI / 2);
 
@@ -915,25 +859,25 @@
     scene.add(fieldMesh);
 
     function getTerrainHeight(x, z, time) {
-      const wave1 = Math.sin(x * 0.035 + time * 0.8) * Math.cos(z * 0.035);
-      const wave2 = Math.cos(x * 0.018 - time * 0.5) * Math.sin(z * 0.022) * 2.5;
-      return (wave1 * 4.5 + wave2) - 10; 
+      const wave1 = Math.sin(x * 0.025 + time * 0.8) * Math.cos(z * 0.025);
+      const wave2 = Math.cos(x * 0.015 - time * 0.5) * Math.sin(z * 0.015) * 3.5;
+      return (wave1 * 5.0 + wave2) - 10; 
     }
 
     function getWindVector(x, y, z, time, outVec) {
-      const windX = Math.sin(x * 0.02 + time * 1.2) * Math.cos(z * 0.02) * 0.08;
-      const windY = Math.cos(y * 0.03 + time * 0.8) * 0.02;
-      const windZ = Math.cos(x * 0.02) * Math.sin(z * 0.02 + time * 1.0) * 0.08;
+      const windX = Math.sin(x * 0.02 + z * 0.01 + time * 0.9) * Math.cos(z * 0.02) * 0.03;
+      const windY = Math.cos(x * 0.015 + y * 0.02 + time * 0.6) * 0.005;
+      const windZ = Math.cos(x * 0.02 - time * 0.7) * Math.sin(z * 0.02 + x * 0.01) * 0.03;
       outVec.set(windX, windY, windZ);
       return outVec;
     }
 
     const arrowGroup = new THREE.Group();
-    const ARROW_COUNT_X = 8;
-    const ARROW_COUNT_Z = 8;
+    const ARROW_COUNT_X = 10;
+    const ARROW_COUNT_Z = 10;
     const arrows = [];
 
-    const arrowGeo = new THREE.ConeGeometry(0.2, 0.7, 4);
+    const arrowGeo = new THREE.ConeGeometry(0.25, 0.8, 4);
     arrowGeo.rotateX(Math.PI / 2);
     const arrowMat = new THREE.MeshBasicMaterial({
       color: 0x00ffd2,
@@ -977,7 +921,7 @@
     // ==========================================
     // 3. 空間分割グリッド (Spatial Hash Grid)
     // ==========================================
-    const GRID_CELL_SIZE = 8.0;
+    const GRID_CELL_SIZE = 10.0;
     const spatialGrid = new Map();
 
     function getKey(x, y, z) {
@@ -1025,7 +969,7 @@
     }
 
     // ==========================================
-    // 3.5 粒子クラス (① 時間差熟成・反発 ＆ ② 動的重力対応)
+    // 3.5 粒子クラス (進化段階に応じたプログレッシブ引力強化モデル)
     // ==========================================
     let particles = [];
     const tempNeighborBuffer = [];
@@ -1060,18 +1004,21 @@
         this.mesh.position.set(x, y, z);
         
         this.type = options.type !== undefined ? options.type : 0;
-        this.radius = Math.min(options.radius !== undefined ? options.radius : 0.28, 5.0);
-        this.hue = options.hue !== undefined ? options.hue : (0.40 + Math.random() * 0.18);
         
+        const baseRadius = 0.28;
+        const phaseScale = Math.pow(1.35, Math.min(this.type, 10)); 
+        this.radius = options.radius !== undefined ? options.radius : (baseRadius * phaseScale);
+        
+        this.hue = options.hue !== undefined ? options.hue : (0.40 + Math.random() * 0.18);
         this.lifeBonus = options.lifeBonus !== undefined ? Math.min(options.lifeBonus, 3.5) : 1.0;
         
         this.mesh.scale.setScalar(this.radius / 0.28);
         this.material.color.setHSL(this.hue % 1.0, 0.85, 0.60);
 
         this.velocity = initialVel.clone().add(VEC_TEMP.set(
-          (Math.random() - 0.5) * 0.1,
-          (Math.random() - 0.5) * 0.1,
-          (Math.random() - 0.5) * 0.1
+          (Math.random() - 0.5) * 0.05,
+          (Math.random() - 0.5) * 0.05,
+          (Math.random() - 0.5) * 0.05
         ));
 
         this.life = 1.0;
@@ -1089,12 +1036,14 @@
         VEC_ALIGNMENT.set(0, 0, 0);
         let count = 0;
 
+        const clusterCenter = new THREE.Vector3();
+
         for (let i = 0; i < neighbors.length; i++) {
           const other = neighbors[i];
           const dist = this.mesh.position.distanceTo(other.mesh.position);
 
-          if (dist > 0 && dist < 7.5) {
-            VEC_COHESION.add(other.mesh.position);
+          if (dist > 0 && dist < 8.5) {
+            clusterCenter.add(other.mesh.position);
             VEC_ALIGNMENT.add(other.velocity);
 
             if (dist < (1.2 * (this.radius + other.radius) / 0.56)) {
@@ -1107,32 +1056,34 @@
         }
 
         if (count > 0) {
-          VEC_COHESION.divideScalar(count);
+          clusterCenter.divideScalar(count);
+          const distFromCenter = this.mesh.position.distanceTo(clusterCenter);
           
-          // ★ ① 時間差（熟成）反発モデル：
-          // 巨大個体（radius > 1.8）になってから「一定の生存時間（例: age > 120フレーム）」が経過したときのみ反発（斥力）が発動！
-          const baseAttr = 0.008;
-          let effectiveAttraction = baseAttr;
+          const shellRadius = 5.0; 
+          
+          // ★ 進化すればするほど近傍の粒子に対する引力が強くなる（プログレッシブ引力強化）
+          // type（進化段階）が高くなるほど基本引力係数を比例して大きくする（例: type 0 で 0.008、type 4 で 0.02 等）
+          const progressiveMultiplier = 1.0 + (this.type * 0.45);
+          let dynamicAttraction = 0.008 * progressiveMultiplier;
 
-          if (this.radius > 1.8) {
-            const maturationDelay = 120; // 熟成時間（この間は巨大凝集体として引き合い・安定）
-            if (this.age > maturationDelay) {
-              // 熟成時間を過ぎると徐々に強力な反発（斥力）へと遷移
-              const maturityProgress = Math.min(1.0, (this.age - maturationDelay) / 100.0);
-              const repulsionPower = Math.pow(this.radius / 1.8, 2.0) * maturityProgress;
-              effectiveAttraction = baseAttr * (1.0 - repulsionPower * 2.5);
-              effectiveAttraction = Math.max(-0.03, effectiveAttraction);
-            }
+          if (distFromCenter < shellRadius * 0.6) {
+            // コア（内部）：進化段階に応じた強力な引力で大きな凝集体を維持
+            dynamicAttraction = 0.012 * progressiveMultiplier;
+          } else if (distFromCenter < shellRadius) {
+            // シェル中間：引力が弱まる
+            dynamicAttraction = 0.002 * progressiveMultiplier;
+          } else {
+            // 表面近郊（最外層）：外向きのピール力（排出）によりスムーズに新陳代謝
+            dynamicAttraction = -0.015;
           }
 
-          VEC_TEMP.subVectors(VEC_COHESION, this.mesh.position).multiplyScalar(effectiveAttraction);
+          VEC_TEMP.subVectors(clusterCenter, this.mesh.position).multiplyScalar(dynamicAttraction);
           this.velocity.add(VEC_TEMP);
 
           VEC_ALIGNMENT.divideScalar(count).multiplyScalar(0.02);
           this.velocity.add(VEC_ALIGNMENT);
 
-          const separationPower = (this.radius > 1.8 && this.age > 120) ? 0.06 : 0.025;
-          VEC_SEPARATION.multiplyScalar(separationPower);
+          VEC_SEPARATION.multiplyScalar(0.035);
           this.velocity.add(VEC_SEPARATION);
         }
 
@@ -1140,26 +1091,40 @@
         const windWeight = Math.max(0.15, 1.0 - (this.radius - 0.28) * 0.25);
         this.velocity.addScaledVector(VEC_WIND, windWeight);
 
-        if (isBoundaryBounceEnabled) {
-          const boundX = TERRAIN_WIDTH * 0.42;
-          const boundZ = TERRAIN_WIDTH * 0.42;
-          const boundYMax = 35;
+        const wanderX = Math.sin(this.age * 0.05 + this.mesh.position.z) * 0.008;
+        const wanderZ = Math.cos(this.age * 0.05 + this.mesh.position.x) * 0.008;
+        this.velocity.x += wanderX;
+        this.velocity.z += wanderZ;
 
-          if (this.mesh.position.x > boundX) { this.velocity.x -= 0.05; }
-          if (this.mesh.position.x < -boundX) { this.velocity.x += 0.05; }
-          if (this.mesh.position.z > boundZ) { this.velocity.z -= 0.05; }
-          if (this.mesh.position.z < -boundZ) { this.velocity.z += 0.05; }
-          if (this.mesh.position.y > boundYMax) { this.velocity.y -= 0.05; }
+        if (isBoundaryToroidalEnabled) {
+          const boundLimitX = TERRAIN_WIDTH * 0.48;
+          const boundLimitZ = TERRAIN_WIDTH * 0.48;
+          const boundYMax = 200; 
+
+          if (this.mesh.position.x > boundLimitX) { 
+            this.mesh.position.x = -boundLimitX + 2; 
+          } else if (this.mesh.position.x < -boundLimitX) { 
+            this.mesh.position.x = boundLimitX - 2; 
+          }
+
+          if (this.mesh.position.z > boundLimitZ) { 
+            this.mesh.position.z = -boundLimitZ + 2; 
+          } else if (this.mesh.position.z < -boundLimitZ) { 
+            this.mesh.position.z = boundLimitZ - 2; 
+          }
+
+          if (this.mesh.position.y > boundYMax) { 
+            this.velocity.y -= 0.05; 
+          }
         }
       }
 
       update(neighbors) {
-        // ② 重さ（重力）スライダー/動的制御値（globalGravityWeight）を物理に反映
         const mass = Math.pow(this.radius / 0.28, 1.5);
         const gravity = 0.008 * Math.min(mass, 8.0) * globalGravityWeight;
         this.velocity.y -= gravity;
 
-        this.velocity.multiplyScalar(0.96);
+        this.velocity.multiplyScalar(0.95);
         this.mesh.position.add(this.velocity);
         this.age += 1;
 
@@ -1168,27 +1133,11 @@
 
         if (this.mesh.position.y <= surfaceY) {
           this.mesh.position.y = surfaceY;
-          if (this.velocity.y < 0) this.velocity.y *= -0.2;
-
-          const delta = 0.5;
-          const hL = getTerrainHeight(this.mesh.position.x - delta, this.mesh.position.z, globalTime);
-          const hR = getTerrainHeight(this.mesh.position.x + delta, this.mesh.position.z, globalTime);
-          const hD = getTerrainHeight(this.mesh.position.x, this.mesh.position.z - delta, globalTime);
-          const hU = getTerrainHeight(this.mesh.position.x, this.mesh.position.z + delta, globalTime);
-
-          const slopeX = (hL - hR) * 0.02 * globalGravityWeight;
-          const slopeZ = (hD - hU) * 0.02 * globalGravityWeight;
-          this.velocity.x += slopeX;
-          this.velocity.z += slopeZ;
-
-          const breath = 1.0 + Math.sin(globalTime * 3.0 + this.age * 0.05) * 0.08;
-          const squish = Math.min(1.3, (1.0 + (mass * 0.04 * globalGravityWeight))) * breath;
-          const baseScale = this.radius / 0.28;
-          this.mesh.scale.set(baseScale * squish, baseScale / (squish * 0.85), baseScale * squish);
-        } else {
-          const baseScale = this.radius / 0.28;
-          this.mesh.scale.set(baseScale, baseScale, baseScale);
+          if (this.velocity.y < 0) this.velocity.y *= -0.1;
         }
+
+        const baseScale = this.radius / 0.28;
+        this.mesh.scale.set(baseScale, baseScale, baseScale);
 
         if (this.fusionCooldown > 0) this.fusionCooldown--;
 
@@ -1233,7 +1182,7 @@
     // ==========================================
     let isInteracting = false;
     let touchStartDist = 0;
-    let touchStartRadius = 45;
+    let touchStartRadius = 55;
     let previousTouchPos = { x: 0, y: 0 };
     let isTwoFingerPan = false;
     let previousPanCenter = { x: 0, y: 0 };
@@ -1281,7 +1230,8 @@
         raycaster.ray.intersectPlane(intersectPlane, spawnPos);
         
         if (!spawnPos) spawnPos.set(0, 5, 0);
-        spawnCluster(spawnPos, 4, VEC_TEMP.set(0, 0, 0));
+        
+        spawnCluster(spawnPos, 24, VEC_TEMP.set(0, 0, 0));
       }
     }
 
@@ -1332,7 +1282,7 @@
         }
         updateCameraPosition();
       } else {
-        if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+        if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
           pointer.x = (clientX / window.innerWidth) * 2 - 1;
           pointer.y = -(clientY / window.innerHeight) * 2 + 1;
           
@@ -1342,8 +1292,8 @@
           raycaster.ray.intersectPlane(intersectPlane, spawnPos);
 
           if (spawnPos) {
-            VEC_TEMP.set(deltaX * 0.01, -deltaY * 0.01, 0);
-            spawnCluster(spawnPos, 2, VEC_TEMP);
+            VEC_TEMP.set(deltaX * 0.004, -deltaY * 0.004, 0);
+            spawnCluster(spawnPos, 12, VEC_TEMP);
           }
         }
       }
@@ -1360,7 +1310,7 @@
     window.addEventListener('wheel', (e) => {
       if (e.target.closest('#ui-container') || e.target.closest('#mode-floating-btn')) return;
       initAudio();
-      cameraRadius += e.deltaY * 0.05;
+      cameraRadius += e.deltaY * 0.08 * (cameraRadius / 45);
       updateCameraPosition();
     }, { passive: true });
 
@@ -1381,7 +1331,7 @@
           if (oldest) oldest.destroy();
         }
 
-        const offset = VEC_TEMP.set((Math.random() - 0.5) * 1.5, Math.random() * 1.0, (Math.random() - 0.5) * 1.5);
+        const offset = VEC_TEMP.set((Math.random() - 0.5) * 1.8, Math.random() * 1.2, (Math.random() - 0.5) * 1.8);
         const p = new ChibiParticle(pos.x + offset.x, pos.y + offset.y, pos.z + offset.z, impulse, options);
         scene.add(p.mesh);
         particles.push(p);
@@ -1422,10 +1372,13 @@
 
             playPokoSound(1.2 + Math.min(newType, 10) * 0.1, true, fusionPos);
 
+            const baseRadius = 0.28;
+            const newRadius = Math.min(baseRadius * Math.pow(1.35, Math.min(newType, 10)), 12.0);
+
             spawnCluster(fusionPos, 1, fusionVel, {
               type: newType,
-              radius: Math.min(Math.max(p1.radius, p2.radius) * 1.20, 5.0),
-              hue: ((p1.type >= p2.type ? p1.hue : p2.hue) + 0.05),
+              radius: newRadius,
+              hue: ((p1.type >= p2.type ? p1.hue : p2.hue) + 0.06) % 1.0,
               lifeBonus: Math.min(Math.max(p1.lifeBonus, p2.lifeBonus) * 1.25, 4.0),
               fusionCooldown: 15
             });
@@ -1493,7 +1446,6 @@
 
         if (p.decomposed) {
           const parentPos = p.mesh.position.clone();
-          const parentVel = p.velocity.clone();
           const prevType = p.type - 1;
 
           p.destroy();
@@ -1503,17 +1455,20 @@
             playPokoSound(0.9 + prevType * 0.1, true, parentPos);
 
             const spawnCount = prevType === 0 ? Math.max(2, decomposeSpawnCount) : decomposeSpawnCount;
+            const baseRadius = 0.28;
+            const prevRadius = Math.max(baseRadius, baseRadius * Math.pow(1.35, Math.min(prevType, 10)));
+
             for (let k = 0; k < spawnCount; k++) {
               const spreadVel = new THREE.Vector3(
-                (Math.random() - 0.5) * 0.4,
-                0.15 + Math.random() * 0.25,
-                (Math.random() - 0.5) * 0.4
-              ).add(parentVel.clone().multiplyScalar(0.25));
+                (Math.random() - 0.5) * 0.25,
+                0.05 + Math.random() * 0.1,
+                (Math.random() - 0.5) * 0.25
+              );
 
               spawnCluster(parentPos, 1, spreadVel, {
                 type: prevType,
-                radius: Math.max(0.28, p.radius / 1.25),
-                hue: p.hue + (k * 0.03),
+                radius: prevRadius,
+                hue: (p.hue + (k * 0.05)) % 1.0,
                 lifeBonus: Math.max(1.0, p.lifeBonus / 1.1),
                 fusionCooldown: 40
               });
